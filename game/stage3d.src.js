@@ -12,26 +12,27 @@ function boot() {
   if (!G || !G.ready || !c2) return setTimeout(boot, 60);
   // wait for the inline bundle (sets __BUNDLE__/__PLATE__/__ART__ after this script) so play mode + plate ground are never skipped by a race
   if (!window.__BUNDLE__ && (boot.n = (boot.n || 0) + 1) < 40) return setTimeout(boot, 50);
-  let gl; try { gl = new THREE.WebGLRenderer({ antialias: true, alpha: false, preserveDrawingBuffer: true }); } catch (e) { window.__STAGE3D__ = { error: String(e) }; return; }
+  const COARSE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+  let gl; try { gl = new THREE.WebGLRenderer({ antialias: !COARSE, alpha: false, preserveDrawingBuffer: true }); } catch (e) { window.__STAGE3D__ = { error: String(e) }; return; }
   const spec = G.spec, W = spec.grid.w, H = spec.grid.h, ART = window.__ART__ || {};
-  gl.setPixelRatio(Math.min(2, devicePixelRatio || 1)); gl.shadowMap.enabled = true; gl.shadowMap.type = THREE.PCFSoftShadowMap;
+  gl.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); gl.shadowMap.enabled = true; gl.shadowMap.type = COARSE ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
   gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.outputColorSpace = THREE.SRGBColorSpace;
-  const cv = gl.domElement; cv.id = 'c3d'; cv.style.cssText = 'position:absolute;left:0;top:0;border-radius:12px;pointer-events:none;z-index:2';
+  const cv = gl.domElement; cv.id = 'c3d'; cv.style.cssText = 'position:absolute;left:0;top:0;border-radius:12px;pointer-events:none;touch-action:none;z-index:2';
   wrap.insertBefore(cv, c2.nextSibling); c2.style.opacity = '0'; document.body.classList.add('s3d');
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#bfe3ff'); scene.fog = new THREE.Fog('#d8ecff', 16, 40);
   let SKYM = false; const PLAYM = !!(window.__BUNDLE__ && window.__BUNDLE__.play && new URLSearchParams(location.search).get('judge') !== '1');
   const cam = new THREE.PerspectiveCamera(60, 4 / 3, .1, 100);
   // lights: warm key (sun), cool fill, rim
   scene.add(new THREE.HemisphereLight('#ffe8c4', '#3b2a55', .9));
-  const key = new THREE.DirectionalLight('#ffd9a0', 2.6); key.position.set(-6, 12, 6); key.castShadow = true; key.shadow.mapSize.set(2048, 2048);
-  Object.assign(key.shadow.camera, { left: -W, right: W, top: H, bottom: -H }); key.shadow.bias = -.0008; key.shadow.radius = 6; scene.add(key);
+  const key = new THREE.DirectionalLight('#ffd9a0', 2.6); key.position.set(-6, 12, 6); key.castShadow = true; key.shadow.mapSize.set(COARSE ? 512 : 2048, COARSE ? 512 : 2048);
+  Object.assign(key.shadow.camera, { left: -W, right: W, top: H, bottom: -H }); key.shadow.bias = -.0008; key.shadow.radius = COARSE ? 1 : 6; scene.add(key);
   const rim = new THREE.DirectionalLight('#8fb8ff', 1.1); rim.position.set(6, 5, -8); scene.add(rim);
-  const tl = new THREE.TextureLoader(), tex = u => { if (!u) return null; const t = tl.load(u); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t; };
+  const tl = new THREE.TextureLoader(), tex = u => { if (!u) return null; const t = tl.load(u); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = COARSE ? 2 : 8; return t; };
   const X = gx => gx + .5 - W / 2, Z = gy => gy + .5 - H / 2;
   // ground = Meta film plate, plus a dark stage apron around it
   const apron = new THREE.Mesh(new THREE.PlaneGeometry(W * 8, H * 8), new THREE.MeshStandardMaterial({ color: '#8cc46a', roughness: 1 }));
   apron.rotation.x = -Math.PI / 2; apron.position.y = -.02; apron.receiveShadow = true; scene.add(apron);
-  const grassT = (() => { const k = document.createElement('canvas'); k.width = k.height = 256; const x = k.getContext('2d'); x.fillStyle = '#e8e8e8'; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 2600; i++) { const v = 170 + Math.random() * 85 | 0; x.strokeStyle = `rgba(${v},${v},${v},.55)`; x.lineWidth = 1 + Math.random() * 1.5; const a = Math.random() * 256, b = Math.random() * 256; x.beginPath(); x.moveTo(a, b); x.lineTo(a + (Math.random() - .5) * 4, b - 3 - Math.random() * 6); x.stroke(); } const t = new THREE.CanvasTexture(k); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(W * 2, H * 2); t.anisotropy = 8; return t; })();
+  const grassT = (() => { const k = document.createElement('canvas'); k.width = k.height = COARSE ? 128 : 256; const x = k.getContext('2d'); x.fillStyle = '#e8e8e8'; x.fillRect(0, 0, k.width, k.height); for (let i = 0; i < (COARSE ? 700 : 2600); i++) { const v = 170 + Math.random() * 85 | 0; x.strokeStyle = `rgba(${v},${v},${v},.55)`; x.lineWidth = 1 + Math.random() * 1.5; const a = Math.random() * k.width, b = Math.random() * k.height; x.beginPath(); x.moveTo(a, b); x.lineTo(a + (Math.random() - .5) * 4, b - 3 - Math.random() * 6); x.stroke(); } const t = new THREE.CanvasTexture(k); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(W * 2, H * 2); t.anisotropy = COARSE ? 2 : 8; return t; })();
   apron.material.map = grassT; apron.material.map.repeat.set(W * 6, H * 6); apron.material.needsUpdate = true;
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ color: '#000', transparent: true, opacity: 0, depthWrite: false }));
   ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
@@ -90,23 +91,23 @@ function boot() {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(.55, .04, 8, 48), new THREE.MeshBasicMaterial({ color: '#ffd27a' })); ring.rotation.x = Math.PI / 2; ring.position.y = .03;
     g.add(body, ic, ring); g.userData = { body, ic, ring, born: 0 }; g.scale.setScalar(.001); scene.add(g); return g; }
   // particles (GPU points, additive)
-  const NP = 900, pos = new Float32Array(NP * 3), colA = new Float32Array(NP * 3), vel = new Float32Array(NP * 3), life = new Float32Array(NP); let pi = 0;
+  const NP = COARSE ? 160 : 900, pos = new Float32Array(NP * 3), colA = new Float32Array(NP * 3), vel = new Float32Array(NP * 3), life = new Float32Array(NP); let pi = 0;
   const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); pg.setAttribute('color', new THREE.BufferAttribute(colA, 3));
   const pts = new THREE.Points(pg, new THREE.PointsMaterial({ size: .22, map: glowT, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); scene.add(pts);
-  function burst(x, z, n, cols, up = 1) { for (let i = 0; i < n; i++) { const k = pi++ % NP, a = Math.random() * 6.283, v = .03 + Math.random() * .09, c = new THREE.Color(cols[i % cols.length]);
+  function burst(x, z, n, cols, up = 1) { if (COARSE) n = Math.max(3, n >> 2); for (let i = 0; i < n; i++) { const k = pi++ % NP, a = Math.random() * 6.283, v = .03 + Math.random() * .09, c = new THREE.Color(cols[i % cols.length]);
     pos.set([x, .6, z], k * 3); vel.set([Math.cos(a) * v, (.06 + Math.random() * .12) * up, Math.sin(a) * v], k * 3); colA.set([c.r, c.g, c.b], k * 3); life[k] = 1; } }
   const POPS = []; const starT = ctex((x, w, h) => { x.font = 'bold 150px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('⭐', w / 2, h / 2 + 6); x.font = '900 70px "Comic Sans MS",cursive'; x.lineWidth = 10; x.strokeStyle = '#7a3d00'; x.strokeText('+1', w * .8, h * .22); x.fillStyle = '#fff6c2'; x.fillText('+1', w * .8, h * .22); });
   function popStar(x, z) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: starT, depthTest: false, transparent: true })); s.position.set(x, 1.4, z); s.renderOrder = 12; s.userData.a = 0; scene.add(s); POPS.push(s); }
   // ambient pollen motes in the light
-  const NM = 160, mg = new THREE.BufferGeometry(), mp = new Float32Array(NM * 3); for (let i = 0; i < NM; i++) mp.set([(Math.random() - .5) * W * 1.4, Math.random() * 4, (Math.random() - .5) * H * 1.4], i * 3);
+  const NM = COARSE ? 36 : 160, mg = new THREE.BufferGeometry(), mp = new Float32Array(NM * 3); for (let i = 0; i < NM; i++) mp.set([(Math.random() - .5) * W * 1.4, Math.random() * 4, (Math.random() - .5) * H * 1.4], i * 3);
   mg.setAttribute('position', new THREE.BufferAttribute(mp, 3)); scene.add(new THREE.Points(mg, new THREE.PointsMaterial({ size: .07, map: glowT, color: '#ffe9a8', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false })));
   // trail of footsteps
   const trail = []; const stepM = new THREE.MeshBasicMaterial({ color: '#6fe3ff', transparent: true, opacity: .55, depthWrite: false });
   // post: bloom + vignette/grade
-  const comp = new EffectComposer(gl); comp.addPass(new RenderPass(scene, cam)); const bloom = new UnrealBloomPass(new THREE.Vector2(512, 384), .55, .6, .82); comp.addPass(bloom);
-  const grade = new ShaderPass({ uniforms: { tDiffuse: { value: null }, t: { value: 0 }, flash: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) } },
+  const comp = new EffectComposer(gl); comp.addPass(new RenderPass(scene, cam)); const bloom = new UnrealBloomPass(new THREE.Vector2(COARSE ? 256 : 512, COARSE ? 192 : 384), COARSE ? .22 : .55, COARSE ? .35 : .6, COARSE ? .9 : .82); comp.addPass(bloom);
+  const grade = new ShaderPass({ uniforms: { tDiffuse: { value: null }, t: { value: 0 }, flash: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) }, grain: { value: COARSE ? 0 : .035 } },
     vertexShader: 'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader: 'uniform sampler2D tDiffuse;uniform float t,flash;uniform vec3 tint;varying vec2 v;float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+t)*43758.5453);}void main(){vec2 o=(v-.5)*.0025;vec4 c=vec4(texture2D(tDiffuse,v+o).r,texture2D(tDiffuse,v).g,texture2D(tDiffuse,v-o).b,1.);float d=distance(v,vec2(.5,.45));c.rgb*=smoothstep(.85,.3,d)*.6+.4;c.rgb=mix(c.rgb,c.rgb*vec3(1.05,.98,1.08),.5);c.rgb=mix(c.rgb,c.rgb*tint,.6)+flash*vec3(.55,.3,.08);c.rgb+=(h(v*900.)-.5)*.035;gl_FragColor=c;}' });
+    fragmentShader: 'uniform sampler2D tDiffuse;uniform float t,flash,grain;uniform vec3 tint;varying vec2 v;float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+t)*43758.5453);}void main(){vec2 o=(v-.5)*(grain>0.0?0.0025:0.0);vec4 c=vec4(texture2D(tDiffuse,v+o).r,texture2D(tDiffuse,v).g,texture2D(tDiffuse,v-o).b,1.);float d=distance(v,vec2(.5,.45));c.rgb*=smoothstep(.85,.3,d)*.6+.4;c.rgb=mix(c.rgb,c.rgb*vec3(1.05,.98,1.08),.5);c.rgb=mix(c.rgb,c.rgb*tint,.6)+flash*vec3(.55,.3,.08);c.rgb+=(h(v*900.)-.5)*grain;gl_FragColor=c;}' });
   comp.addPass(grade); comp.addPass(new OutputPass());
   function size() { const r = c2.getBoundingClientRect(), pw = c2.offsetParent ? c2.offsetLeft : 0; cv.style.left = c2.offsetLeft + 'px'; cv.style.top = c2.offsetTop + 'px';
     const w = Math.max(64, Math.round(r.width)), h = Math.max(48, Math.round(r.height)); if (cv._w !== w || cv._h !== h) { cv._w = w; cv._h = h; gl.setSize(w, h); comp.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix(); } }
@@ -115,7 +116,7 @@ function boot() {
   function ring(x, z, col = '#fff6e0', sp = 1.09) { const m = new THREE.Mesh(new THREE.RingGeometry(.15, .28, 24), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .7, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(x, .04, z); m.userData.sp = sp; scene.add(m); RINGS.push(m); }
   const hint = new THREE.Mesh(new THREE.ConeGeometry(.35, .7, 4), new THREE.MeshStandardMaterial({ color: '#ffe27a', emissive: '#ffb300', emissiveIntensity: 1.2 })); hint.rotation.x = Math.PI; hint.visible = false; scene.add(hint);
   const hintG = new THREE.Mesh(new THREE.RingGeometry(.55, .8, 32), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending })); hintG.rotation.x = -Math.PI / 2; hintG.visible = false; scene.add(hintG);
-  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0 };
+  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full' };
   const still = new URLSearchParams(location.search).get('still') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches; let freeze = 0;
   function frame() { requestAnimationFrame(frame); size(); if (freeze > 0) { freeze--; comp.render(); return; } const t = still ? 2 : clock.getElapsedTime(), S = G.state(), gates = G.gates ? G.gates() : [];
     // juice from state deltas
@@ -127,7 +128,7 @@ function boot() {
     seen.ev = S.events.length;
     if (S.status !== seen.st) { if (S.status === 'won') { if (!WT) { WT = winTitle('¡GANASTE!'); scene.add(WT); } WT.visible = true; WT.position.set(0, 3.2, 0); WT.userData.t0 = t; winT = t; flash = .22; freeze = 5; for (let k = 0; k < 4; k++) burst(X(P.x) + (Math.random() - .5) * 3, Z(P.y) + (Math.random() - .5) * 2, 160, ['#ffd54f', '#66bb6a', '#42a5f5', '#ec407a', '#ab47bc'], 1.5); tintT.set(1.15, 1.05, .9); }
       else if (S.status === 'lost') { shake = .6; freeze = 4; burst(X(P.x), Z(P.y), 140, ['#ef5350', '#90caf9', '#2b2118']); tintT.set(1.3, .65, .7); } else { if (WT) WT.visible = false; tintT.set(1, 1, 1); trail.splice(0).forEach(s => scene.remove(s)); winT = 0; } seen.st = S.status; }
-    if (Math.random() < .5) burst(pp.x + (Math.random() - .5) * .4, pp.z + .2, 1, ['#ff9ad5', '#ffe27a', '#9be7ff'], .25);
+    if (Math.random() < (COARSE ? .1 : .5)) burst(pp.x + (Math.random() - .5) * .4, pp.z + .2, 1, ['#ff9ad5', '#ffe27a', '#9be7ff'], .25);
     // actors
     pp.lerp(new THREE.Vector3(X(P.x), 0, Z(P.y)), .28); if (hop > .05 && hop * .86 <= .05) { land = 1; ring(pp.x, pp.z); burst(pp.x, pp.z, 10, ['#e8d9b8', '#fff8e6', '#cdb98f'], .25); } hop *= .86; land *= .8; player.position.set(pp.x, Math.sin((1 - hop) * Math.PI) * hop * .5, pp.z);
     const sq = (1 + Math.sin(t * 5) * .04) * (1 - land * .25) * (1 + hop * .15); player.userData.q.scale.set(1 / sq, sq, 1); player.userData.q.rotation.z = Math.sin(t * 2.3) * .05;
@@ -138,7 +139,7 @@ function boot() {
     const live = new Set(); S.foes.forEach((f, i) => { live.add(f.id); const a = foes[f.id] || (foes[f.id] = (() => { const z = actor('enemy', f.label, 1.9, f.id); z.position.set(X(f.x), 0, Z(f.y)); return z; })());
       a.visible = true; a.position.lerp(new THREE.Vector3(X(f.x), 0, Z(f.y)), .2); a.userData.q.rotation.z = Math.sin(t * 4 + i) * .12; a.userData.halo.material.opacity = .35 + Math.sin(t * 6 + i) * .2; });
     Object.keys(foes).forEach(k => { if (!live.has(k)) foes[k].visible = false; });
-    if (doorA) { const o = S.doorOpen; doorA.userData.halo.material.opacity = o ? .9 + Math.sin(t * 5) * .1 : .15; doorA.userData.halo.scale.setScalar(o ? 3.6 + Math.sin(t * 4) * .3 : 2.2); doorA.userData.q.material.emissiveIntensity = o ? .6 + Math.sin(t * 4) * .2 : .02; doorA.userData.q.material.color.set(o ? '#ffffff' : '#8a8aa0'); if (o && Math.random() < .3) burst(doorA.position.x + (Math.random() - .5), doorA.position.z, 2, ['#fff6c2', '#ffd27a'], .6); }
+    if (doorA) { const o = S.doorOpen; doorA.userData.halo.material.opacity = o ? .9 + Math.sin(t * 5) * .1 : .15; doorA.userData.halo.scale.setScalar(o ? 3.6 + Math.sin(t * 4) * .3 : 2.2); doorA.userData.q.material.emissiveIntensity = o ? .6 + Math.sin(t * 4) * .2 : .02; doorA.userData.q.material.color.set(o ? '#ffffff' : '#8a8aa0'); if (o && Math.random() < (COARSE ? .08 : .3)) burst(doorA.position.x + (Math.random() - .5), doorA.position.z, 2, ['#fff6c2', '#ffd27a'], .6); }
     HZ.forEach((m, i) => { m.material.emissiveIntensity = m.userData.haz === 'f' ? 1.2 + Math.sin(t * 9 + i) * .5 : .35 + Math.sin(t * 2 + i) * .15; });
     MK.forEach((m, i) => { if (m.userData.bug !== undefined) { m.rotation.z = t * (m.userData.bug ? 1.5 : -.8); m.material.opacity = m.userData.bug ? .5 + .5 * Math.sin(t * 6) : .85; } });
     // gates: cleared + NEXT one only (mirrors game.js stagger)
@@ -154,7 +155,7 @@ function boot() {
     if (doorA) { const dd = Math.hypot(doorA.position.x - pp.x, doorA.position.z - pp.z), beat = Math.pow(Math.max(0, Math.sin(t * 7.5)), 8); doorA.scale.setScalar(1 + (S.doorOpen ? .05 + beat * .08 * (dd < 3 ? 2 : 1) : 0)); }
     if (P.x !== seen.hx || P.y !== seen.hy) { seen.hx = P.x; seen.hy = P.y; lastMv = t; } idleT = t - lastMv;
     { let tg = null; if (S.status === 'playing' && idleT > 5) { const gl = goals.filter(g => g.visible); if (gl.length) tg = gl.reduce((a, b) => (a.position.distanceTo(pp) < b.position.distanceTo(pp) ? a : b)); else if (doorA && S.doorOpen) tg = doorA; }
-      hint.visible = hintG.visible = !!tg; if (tg) { hintG.position.set(tg.position.x, .05, tg.position.z); hintG.scale.setScalar(1.2 + Math.abs(Math.sin(t * 4)) * .6 * (idleT > 10 ? 1.6 : 1)); hintG.material.opacity = .45 + Math.sin(t * 8) * .25; if (Math.random() < .25) burst(tg.position.x, tg.position.z, 2, ['#ffe27a', '#fff'], .8); hint.position.set(tg.position.x, 2.6 + Math.abs(Math.sin(t * 4)) * .5, tg.position.z); hint.rotation.y = t * 2; hint.scale.setScalar((idleT > 10 ? 1.6 : 1.2) * (1 + Math.pow(Math.max(0, Math.sin(t * 6)), 6) * .25)); } }
+      hint.visible = hintG.visible = !!tg; if (tg) { hintG.position.set(tg.position.x, .05, tg.position.z); hintG.scale.setScalar(1.2 + Math.abs(Math.sin(t * 4)) * .6 * (idleT > 10 ? 1.6 : 1)); hintG.material.opacity = .45 + Math.sin(t * 8) * .25; if (Math.random() < (COARSE ? .08 : .25)) burst(tg.position.x, tg.position.z, 2, ['#ffe27a', '#fff'], .8); hint.position.set(tg.position.x, 2.6 + Math.abs(Math.sin(t * 4)) * .5, tg.position.z); hint.rotation.y = t * 2; hint.scale.setScalar((idleT > 10 ? 1.6 : 1.2) * (1 + Math.pow(Math.max(0, Math.sin(t * 6)), 6) * .25)); } }
     dolly *= .97; cam.fov = 60 - dolly * 14 + (S.status === 'won' ? 4 : 0); cam.updateProjectionMatrix();
     // camera: slow cinematic drift + follow + shake; win = crane up
     const D = Math.max(W, H), win = S.status === 'won' ? Math.min(1, (t - winT) / 2) : 0;
@@ -165,8 +166,8 @@ function boot() {
     cam.lookAt(tx * .65, .8 + win * 1.2, tz - 2.6);
     // billboards face camera (yaw only)
     scene.traverse(o => { if (o.userData && o.userData.q && !(o === player && S.status === 'won')) o.rotation.y = Math.atan2(cam.position.x - o.position.x, cam.position.z - o.position.z); });
-    flash *= .9; grade.uniforms.flash.value = flash; grade.uniforms.t.value = t; grade.uniforms.tint.value.lerp(tintT, .06); bloom.strength = .5 + flash * .6 + (S.status === 'won' ? .4 : 0);
-    if (S.status === 'won' && t - winT < 2.5 && Math.random() < .6) burst(pp.x + (Math.random() - .5) * 4, pp.z + (Math.random() - .5) * 2, 8, ['#ff5c8a', '#ffd54f', '#6fe3ff', '#7dffb0', '#c38bff'], 1.6);
+    flash *= .9; grade.uniforms.flash.value = flash; grade.uniforms.t.value = t; grade.uniforms.tint.value.lerp(tintT, .06); bloom.strength = (COARSE ? .2 : .5) + flash * (COARSE ? .25 : .6) + (S.status === 'won' ? (COARSE ? .15 : .4) : 0);
+    if (S.status === 'won' && t - winT < 2.5 && Math.random() < (COARSE ? .18 : .6)) burst(pp.x + (Math.random() - .5) * 4, pp.z + (Math.random() - .5) * 2, 8, ['#ff5c8a', '#ffd54f', '#6fe3ff', '#7dffb0', '#c38bff'], 1.6);
     if (WT && WT.visible) WT.userData.update(t - WT.userData.t0, 1 / 60);
     comp.render(); window.__STAGE3D__.frames++;
   }
