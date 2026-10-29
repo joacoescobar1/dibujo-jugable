@@ -7,7 +7,8 @@
 ## Cómo juegan los jueces (offline, sin API key)
 - `git clone` → abrir `game/gallery.html` (file:// funciona) → 21 mundos jugables, cada uno con 3 escenas → ending.
 - Demo del loop fail→fix→win: `game/demo.html` (botón **Modo juez**).
-- Online (opcional): GitHub Pages `https://<user>.github.io/<repo>/game/gallery.html` — PENDIENTE activar (repo público → Settings → Pages → Deploy from branch `main`, carpeta `/ (root)`).
+- Repo público: https://github.com/joacoescobar1/dibujo-jugable
+- Online: GitHub Pages https://joacoescobar1.github.io/dibujo-jugable/game/gallery.html (activado 2026-10-29, deploy desde `main` `/`)
 - Local (sin internet): `scripts/serve_demo.sh 8000` y abrir `http://localhost:8000/gallery.html` o `/demo.html`; también `python3 -m http.server 8000 -d game`. Abrir `game/gallery.html` directo con file:// también funciona.
 
 ## Evidencia
