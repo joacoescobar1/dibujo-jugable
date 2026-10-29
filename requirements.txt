@@ -1,0 +1,4 @@
+pillow
+playwright
+jsonschema
+openai

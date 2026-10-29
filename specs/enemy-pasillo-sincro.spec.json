@@ -1,0 +1,6 @@
+{"title":"Dos fantasmas en el pasillo (ROTO)","grid":{"w":9,"h":5,"tile":40},
+ "player":{"id":"nene","label":"Nene","x":0,"y":2},
+ "goals":[{"id":"estrella","label":"Estrella","x":8,"y":2}],
+ "walls":[{"x":2,"y":0,"w":5,"h":2},{"x":2,"y":3,"w":5,"h":2}],
+ "characters":[{"id":"fantasma","label":"Fantasma","role":"enemy","x":2,"y":2,"patrol":[[1,0],[1,0],[1,0],[1,0],[-1,0],[-1,0],[-1,0],[-1,0]]}],
+ "win_condition":{"type":"reach_goal","target":"estrella"}}

@@ -1,0 +1,29 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Dibujo Jugable</title>
+<style>
+body{background:#1b1b22;color:#eee;font-family:system-ui,sans-serif;margin:0;display:flex;gap:16px;justify-content:center;padding:16px}
+#main{text-align:center}canvas{background:#fffbe8;border-radius:8px;box-shadow:0 6px 24px #0008}
+#hud{display:flex;gap:12px;justify-content:center;margin:8px 0;font-size:14px}
+#hud span{background:#2c2c38;padding:4px 10px;border-radius:12px}
+#wrap{position:relative;display:inline-block}
+#ov{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;border-radius:8px;font-size:42px;font-weight:800}
+#ov.won{display:flex;background:#2e7d32cc}#ov.lost{display:flex;background:#c62828cc}
+#ov small{font-size:16px;font-weight:400;margin-top:8px}
+#tl{width:280px;background:#25252f;border-radius:8px;padding:10px;text-align:left;font-size:12px;max-height:560px;overflow:auto}
+#tl h4{margin:0 0 6px}#tl ul{padding:0;margin:0}#tl li{margin:3px 0;list-style:none}#tl .fail{color:#ff8a80}#tl .fix{color:#ffd54f}#tl .win{color:#a5d6a7}
+#ov{backdrop-filter:blur(3px);text-shadow:0 3px 0 #0005;letter-spacing:1px;font-family:"Comic Sans MS","Chalkboard SE",cursive}
+#ov.won{background:radial-gradient(circle,#ffe082ee,#43a047dd 70%)!important;color:#fff;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+#ov.lost{background:radial-gradient(circle,#90caf9dd,#c62828dd 75%)!important;color:#fff;animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop{from{transform:scale(.85)}to{transform:scale(1)}}
+/* end-of-game = ribbon, not a curtain: the kid's board (sprites, agent trail, fix marks) stays readable under WIN/LOSE */
+#ov{inset:auto;top:10px;left:10%;right:10%;padding:6px 16px;border-radius:16px;flex-direction:row;gap:14px;font-size:30px;backdrop-filter:none;box-shadow:0 6px 18px #0006}
+#ov.won{background:linear-gradient(90deg,#43a047f0,#fbc02df0)!important}#ov.lost{background:linear-gradient(90deg,#c62828f0,#ef6c00f0)!important}
+#ov small{font-size:13px;margin:0;opacity:.9}
+
+canvas{box-shadow:0 10px 30px #000a,0 0 0 6px #fdf6e3,0 0 0 8px #c8b88a}
+</style></head>
+<body><a href="gallery.html" style="position:fixed;top:10px;right:12px;z-index:9;background:linear-gradient(90deg,#ef6c00,#fbc02d);color:#fff;text-decoration:none;padding:8px 16px;border-radius:20px;font-weight:800">🎨 Jugar demos · Para jueces →</a><div id="main"><h3 id="t">Dibujo Jugable</h3>
+<div id="hud"><span>Intento agente: <b id="att">1</b></span><span>Pasos: <b id="steps">0</b></span><span>Estado: <b id="st">jugando</b></span></div>
+<div id="wrap"><canvas id="c"></canvas><div id="ov"><div id="ovt"></div><small>R para reiniciar</small></div></div>
+<p id="s">Flechas para mover · R reinicia</p></div>
+<div id="tl"><h4>Timeline del agente</h4><ul id="tll"></ul></div>
+<script src="game.js"></script></body></html>

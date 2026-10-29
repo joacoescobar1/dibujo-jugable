@@ -1,0 +1,7 @@
+{"title":"El perro guardián","grid":{"w":9,"h":5,"tile":40},
+ "player":{"id":"nene","label":"Nene","x":0,"y":2},
+ "goals":[{"id":"casa","label":"Casa","x":8,"y":2}],
+ "characters":[{"id":"perro","label":"Perro","role":"enemy","x":4,"y":0,"patrol":[[0,1],[0,1],[0,1],[0,1],[0,-1],[0,-1],[0,-1],[0,-1]]},
+               {"id":"abuela","label":"Abuela","role":"npc","x":1,"y":0}],
+ "walls":[{"x":3,"y":4,"w":3,"h":1}],
+ "win_condition":{"type":"reach_goal","target":"casa"}}

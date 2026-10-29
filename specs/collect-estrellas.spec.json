@@ -1,0 +1,75 @@
+{
+ "title": "Juntá las 3 estrellas",
+ "grid": {
+  "w": 8,
+  "h": 6,
+  "tile": 40
+ },
+ "player": {
+  "id": "pollito",
+  "label": "Pollito",
+  "x": 0,
+  "y": 0
+ },
+ "goals": [
+  {
+   "id": "estrella1",
+   "label": "★",
+   "x": 7,
+   "y": 0
+  },
+  {
+   "id": "estrella2",
+   "label": "★",
+   "x": 0,
+   "y": 5
+  },
+  {
+   "id": "estrella3",
+   "label": "★",
+   "x": 7,
+   "y": 5
+  }
+ ],
+ "hazards": [
+  {
+   "id": "charco",
+   "label": "Agua",
+   "x": 3,
+   "y": 2,
+   "w": 2,
+   "h": 2,
+   "effect": "lose"
+  }
+ ],
+ "characters": [
+  {
+   "id": "zorro",
+   "role": "enemy",
+   "label": "Zorro",
+   "x": 5,
+   "y": 1,
+   "patrol": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     -1
+    ],
+    [
+     0,
+     -1
+    ]
+   ]
+  }
+ ],
+ "win_condition": {
+  "type": "collect_all"
+ }
+}

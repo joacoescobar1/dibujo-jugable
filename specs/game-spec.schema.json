@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DibujoJugableSpec",
+  "type": "object",
+  "required": ["title", "grid", "player", "goals", "win_condition"],
+  "properties": {
+    "title": {"type": "string"},
+    "source": {"type": "object", "properties": {"drawing": {"type": "string"}, "voice_transcript": {"type": "string"}}},
+    "genre": {"enum": ["top-down", "platformer", "turn-based"], "default": "top-down"},
+    "grid": {"type": "object", "required": ["w", "h"], "properties": {"w": {"type": "integer", "minimum": 5}, "h": {"type": "integer", "minimum": 5}, "tile": {"type": "integer", "default": 40}}},
+    "characters": {"type": "array", "items": {"$ref": "#/$defs/entity"}},
+    "player": {"$ref": "#/$defs/entity"},
+    "goals": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/entity"}},
+    "hazards": {"type": "array", "items": {"allOf": [{"$ref": "#/$defs/entity"}, {"properties": {"effect": {"enum": ["lose", "respawn", "slow"]}}}]}},
+    "walls": {"type": "array", "items": {"$ref": "#/$defs/rect"}},
+    "win_condition": {"type": "object", "required": ["type"], "properties": {"type": {"enum": ["reach_goal", "collect_all", "survive_seconds"]}, "target": {"type": "string"}, "seconds": {"type": "number"}}},
+    "rules_text": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "rect": {"type": "object", "required": ["x", "y", "w", "h"], "properties": {"x": {"type": "integer"}, "y": {"type": "integer"}, "w": {"type": "integer"}, "h": {"type": "integer"}}},
+    "entity": {"type": "object", "required": ["id", "x", "y"], "properties": {"id": {"type": "string"}, "label": {"type": "string"}, "x": {"type": "integer"}, "y": {"type": "integer"}, "w": {"type": "integer", "default": 1}, "h": {"type": "integer", "default": 1}, "sprite": {"type": "string"}, "color": {"type": "string"}}}
+  }
+}

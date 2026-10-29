@@ -1,0 +1,7 @@
+{"title":"El perro duerme en la puerta (ROTO)","grid":{"w":9,"h":7,"tile":40},
+ "player":{"id":"gato","label":"Gato","x":1,"y":3},
+ "goals":[{"id":"casa","label":"Casa","x":7,"y":3}],
+ "walls":[{"x":5,"y":1,"w":1,"h":2},{"x":5,"y":4,"w":1,"h":2},{"x":5,"y":1,"w":3,"h":1},{"x":5,"y":5,"w":3,"h":1},{"x":8,"y":1,"w":1,"h":5}],
+ "characters":[{"id":"perro","label":"Perro guardián","role":"enemy","x":5,"y":3,"patrol":[[0,0]]}],
+ "rules_text":["El gato tiene que entrar a la casa, pero el perro duerme justo en la puerta"],
+ "win_condition":{"type":"reach_goal","target":"casa"}}

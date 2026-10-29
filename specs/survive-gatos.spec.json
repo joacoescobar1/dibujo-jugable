@@ -1,0 +1,7 @@
+{"title":"Escondete de los gatos 5 segundos","grid":{"w":7,"h":7,"tile":40},
+ "player":{"id":"raton","label":"Ratón","x":3,"y":3},
+ "goals":[{"id":"queso","label":"Queso","x":6,"y":6}],
+ "characters":[{"id":"gato1","label":"Gato","role":"enemy","x":0,"y":3,"patrol":[[1,0],[1,0],[-1,0],[-1,0]]},
+               {"id":"gato2","label":"Gato","role":"enemy","x":3,"y":0,"patrol":[[0,1],[0,1],[0,-1],[0,-1]]}],
+ "hazards":[{"id":"agua","label":"Agua","x":5,"y":5,"w":2,"h":1}],
+ "win_condition":{"type":"survive_seconds","seconds":5}}

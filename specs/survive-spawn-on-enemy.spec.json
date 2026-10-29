@@ -1,0 +1,58 @@
+{
+ "title": "Survive spawn-camp (ROTO)",
+ "grid": {
+  "w": 7,
+  "h": 7,
+  "tile": 40
+ },
+ "player": {
+  "id": "raton",
+  "x": 3,
+  "y": 3
+ },
+ "goals": [
+  {
+   "id": "queso",
+   "x": 6,
+   "y": 6
+  }
+ ],
+ "characters": [
+  {
+   "id": "gato",
+   "role": "enemy",
+   "x": 3,
+   "y": 3,
+   "patrol": [
+    [
+     1,
+     0
+    ],
+    [
+     -1,
+     0
+    ]
+   ]
+  },
+  {
+   "id": "gato2",
+   "role": "enemy",
+   "x": 4,
+   "y": 3,
+   "patrol": [
+    [
+     0,
+     1
+    ],
+    [
+     0,
+     -1
+    ]
+   ]
+  }
+ ],
+ "win_condition": {
+  "type": "survive_seconds",
+  "seconds": 6
+ }
+}

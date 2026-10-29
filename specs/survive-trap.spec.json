@@ -1,0 +1,6 @@
+{"title":"Trampa: sin escape (debe ser NO ganable)","grid":{"w":5,"h":5,"tile":40},
+ "player":{"id":"raton","label":"Ratón","x":0,"y":0},
+ "goals":[{"id":"queso","x":4,"y":4}],
+ "walls":[{"x":0,"y":1,"w":1,"h":1}],
+ "characters":[{"id":"gato","role":"enemy","x":2,"y":0,"patrol":[[-1,0],[0,0]]}],
+ "win_condition":{"type":"survive_seconds","seconds":4}}

@@ -1,0 +1,358 @@
+{
+  "timestamp": "2026-10-28T12:17:51.450918-03:00",
+  "mode_requested": "offline",
+  "mode_used": "offline",
+  "note": "generated 12 spec(s) from drawings via generate_from_drawing --mode offline (offline crude colour-vision, no model)",
+  "items": 23,
+  "first_try_win_rate": 0.4782608695652174,
+  "after_loop_win_rate": 0.9565217391304348,
+  "live_meta_calls": 0,
+  "per_item": [
+    {
+      "item": "specs/broken-example.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 34,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "specs/collect-encerrada.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 19,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "specs/collect-estrellas.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 17
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "specs/enemy-doble-guardia.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 7,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "specs/enemy-guardia-puerta.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 6,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "specs/enemy-pasillo-sincro.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 12,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "specs/enemy-patrol.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 8
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "specs/example.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 34
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "specs/survive-gatos.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 5
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "specs/survive-spawn-on-enemy.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 6,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "specs/survive-trap.spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": false,
+        "win": false,
+        "steps": null,
+        "patcher": "mock"
+      },
+      "status": "lose"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_01/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 22
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_02/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 22,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_03/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 22
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_04/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 19,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_05/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 22
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_06/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 22
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_07/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 22
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_08/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 22,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_09/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 22
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_10/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": true,
+        "win": true,
+        "steps": 22
+      },
+      "after_loop": {
+        "win": true,
+        "note": "no loop needed"
+      },
+      "status": "win_first_try"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_11/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 22,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    },
+    {
+      "item": "runs/eval-20261028-121735-233/gen/synthetic_12/spec.json",
+      "valid": true,
+      "first_try": {
+        "reachable": false,
+        "win": false,
+        "steps": null
+      },
+      "after_loop": {
+        "reachable": true,
+        "win": true,
+        "steps": 22,
+        "patcher": "mock"
+      },
+      "status": "win_after_loop"
+    }
+  ]
+}

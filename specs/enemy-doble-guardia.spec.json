@@ -1,0 +1,8 @@
+{"title":"Dos perros en el pasillo (ROTO)","grid":{"w":10,"h":7,"tile":40},
+ "player":{"id":"gato","label":"Gato","x":1,"y":3},
+ "goals":[{"id":"casa","label":"Casa","x":8,"y":3}],
+ "walls":[{"x":3,"y":0,"w":7,"h":3},{"x":3,"y":4,"w":7,"h":3},{"x":9,"y":3,"w":1,"h":1}],
+ "characters":[{"id":"perro1","label":"Perro 1","role":"enemy","x":4,"y":3,"patrol":[[0,0]]},
+               {"id":"perro2","label":"Perro 2","role":"enemy","x":6,"y":3,"patrol":[[0,0]]}],
+ "rules_text":["El gato tiene que llegar a la casa, pero dos perros duermen en el pasillo"],
+ "win_condition":{"type":"reach_goal","target":"casa"}}
