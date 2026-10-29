@@ -39,12 +39,17 @@ def plan_gates(spec, transcript=""):
     if alt:
         for c in _cells(spec, alt)[1:]:
             if c not in cells and c not in picks: fb = c; break
-    G = [{"id": "fork", "kind": "fork", "cell": list(fa), "alt": list(fb) if fb else None, "answer": "A",
-          "prompt": "¿Por dónde seguís?", "options": ["⬆️ Por acá", "↪️ Por el otro lado" if fb else "🧱 Por la pared"]},
-         {"id": "q", "kind": "question", "cell": list(picks[1]), "answer": "No" if no else "Sí",
-          "prompt": f"¿Tu nave puede tocar {'las piedras' if hz == 'piedra' else 'el ' + hz}?", "options": ["👍 Sí", "👎 No"]},
+    hz_en = {"piedra": "the rocks", "agua": "the water", "fuego": "the fire", "lava": "the lava"}[hz]
+    hz_es = {"piedra": "las piedras", "agua": "el agua", "fuego": "el fuego", "lava": "la lava"}[hz]
+    fork_en = ["⬆️ This way", "↪️ The other way" if fb else "🧱 Into the wall"]
+    fork_es = ["⬆️ Por acá", "↪️ Por el otro lado" if fb else "🧱 Por la pared"]
+    G = [{"id": "fork", "kind": "fork", "cell": list(fa), "alt": list(fb) if fb else None, "answer": "A", "answer_es": "A",
+          "prompt": "Which way do you go?", "prompt_es": "¿Por dónde seguís?", "options": fork_en, "options_es": fork_es},
+         {"id": "q", "kind": "question", "cell": list(picks[1]), "answer": "No" if no else "Yes", "answer_es": "No" if no else "Sí",
+          "prompt": f"Can your ship touch {hz_en}?", "prompt_es": f"¿Tu nave puede tocar {hz_es}?",
+          "options": ["👍 Yes", "👎 No"], "options_es": ["👍 Sí", "👎 No"]},
          {"id": "m", "kind": "meter", "cell": list(picks[2]), "answer_frame": meter_frame(), "zone": list(METER_ZONE),
-          "prompt": "¡Saltá justo! Pará la aguja en lo dorado"}]
+          "prompt": "Jump right on time! Stop the needle on the gold.", "prompt_es": "¡Saltá justo! Pará la aguja en lo dorado"}]
     return G
 def clear_plan(gates): return {g["id"]: (g.get("answer") or "frame:%d" % g["answer_frame"]) for g in gates}
 def check(g, ans):

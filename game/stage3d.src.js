@@ -13,6 +13,8 @@ function boot() {
   // wait for the inline bundle (sets __BUNDLE__/__PLATE__/__ART__ after this script) so play mode + plate ground are never skipped by a race
   if (!window.__BUNDLE__ && (boot.n = (boot.n || 0) + 1) < 40) return setTimeout(boot, 50);
   const COARSE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
+  const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
+  const STILL = new URLSearchParams(location.search).get('still') === '1' || REDUCED;
   let gl; try { gl = new THREE.WebGLRenderer({ antialias: !COARSE, alpha: false, preserveDrawingBuffer: true }); } catch (e) { window.__STAGE3D__ = { error: String(e) }; return; }
   const spec = G.spec, W = spec.grid.w, H = spec.grid.h, ART = window.__ART__ || {};
   gl.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); gl.shadowMap.enabled = true; gl.shadowMap.type = COARSE ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
@@ -47,7 +49,7 @@ function boot() {
   const label = s => ctex((x, w, h) => { x.font = 'bold 56px "Comic Sans MS","Chalkboard SE",cursive'; const tw = Math.min(w - 8, x.measureText(s).width + 36); x.fillStyle = '#fffaf0ee'; x.beginPath(); x.roundRect((w - tw) / 2, 10, tw, 76, 38); x.fill(); x.strokeStyle = '#ffd27a'; x.lineWidth = 4; x.stroke(); x.fillStyle = '#2b2118'; x.textAlign = 'center'; x.fillText(s, w / 2, 66, w - 40); }, 768, 96);
   const blobT = ctex((x, w, h) => { const g = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, '#000a'); g.addColorStop(1, '#0000'); x.fillStyle = g; x.fillRect(0, 0, w, h); }, 128, 128);
   const glowT = ctex((x, w, h) => { const g = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); g.addColorStop(0, '#fff'); g.addColorStop(.25, '#fffa'); g.addColorStop(1, '#fff0'); x.fillStyle = g; x.fillRect(0, 0, w, h); }, 64, 64);
-  const FALL = { player: '🦋', goal: '⭐', enemy: '👾', npc: '🙂', wall: '🪨' }, COL = { player: '#6fe3ffaa', goal: '#ffd54faa', enemy: '#ab47bcaa', npc: '#ce93d8aa', wall: '#8888' };
+  const FALL = { player: '🦋', goal: '⭐', enemy: '👾', npc: '🙂', wall: '🪨', door: '🚪' }, COL = { player: '#6fe3ffaa', goal: '#ffd54faa', enemy: '#ab47bcaa', npc: '#ce93d8aa', wall: '#8888', door: '#ffd27aaa' };
   const artTex = {}; const roleTex = r => artTex[r] || (artTex[r] = ART[r] ? tex(ART[r]) : emoji(FALL[r] || '❔', COL[r] || '#fff5'));
   // character = upright billboard with real alpha shadow + contact blob + glow halo + name card
   function actor(role, name, size = 1.25, id) {
@@ -76,7 +78,21 @@ function boot() {
       m.rotation.x = -Math.PI / 2; m.position.set(X(gx), .02, Z(gy)); m.userData.haz = water ? 'w' : 'f'; scene.add(m); HZ.push(m); }); });
   const goals = spec.goals.map(g => { const a = actor('goal', g.label, 1.6, g.id); a.position.set(X(g.x + ((g.w || 1) - 1) / 2), 0, Z(g.y + ((g.h || 1) - 1) / 2)); a.userData.id = g.id; return a; });
   const npcs = (spec.characters || []).filter(c => c.role !== 'enemy' && !/^(sol|sun)$/i.test(c.id)).map(n => { const a = actor('npc', n.label, 1.1, n.id); a.position.set(X(n.x), 0, Z(n.y)); return a; });
-  let doorA = null; if (spec.door) { doorA = actor('door', spec.door.label, 2.1, 'door'); doorA.position.set(X(spec.door.x), 0, Z(spec.door.y)); if (ART.door) { doorA.userData.q.material.map = tex(ART.door); doorA.userData.q.material.emissiveMap = doorA.userData.q.material.map; } doorA.userData.halo.material.color.set('#ffe9a0'); }
+  let doorA = null; if (spec.door) { doorA = actor('door', spec.door.label, 2.1, 'door'); doorA.position.set(X(spec.door.x), 0, Z(spec.door.y)); if (ART.door) { doorA.userData.q.material.map = tex(ART.door); doorA.userData.q.material.emissiveMap = doorA.userData.q.material.map; } doorA.userData.halo.material.color.set('#ffe9a0'); dressDoor(doorA); }
+  function dressDoor(g) {
+    const archMat = new THREE.MeshBasicMaterial({ color: '#ffd56a', toneMapped: false });
+    const arch = new THREE.Mesh(new THREE.TorusGeometry(1.05, .12, 8, 28, Math.PI), archMat);
+    arch.position.set(0, 1.18, .16); g.add(arch);
+    const postGeo = new THREE.CylinderGeometry(.1, .12, 1.22, 6);
+    [-1.05, 1.05].forEach(x => { const p = new THREE.Mesh(postGeo, archMat); p.position.set(x, .61, .16); g.add(p); });
+    const beamT = ctex((x, w, h) => { const gr = x.createLinearGradient(0, h, 0, 0); gr.addColorStop(0, 'rgba(255,200,70,0)'); gr.addColorStop(.18, 'rgba(255,214,110,.28)'); gr.addColorStop(.58, 'rgba(255,246,210,.9)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, w, h); }, 16, 128);
+    const beam = new THREE.Mesh(new THREE.CylinderGeometry(.12, .62, 6.6, 12, 1, true), new THREE.MeshBasicMaterial({ map: beamT, color: '#fff4c0', transparent: true, opacity: .5, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false, fog: false }));
+    beam.position.y = 4.05; g.add(beam);
+    const pad = new THREE.Mesh(new THREE.RingGeometry(.7, 1.08, 32), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .75, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false, fog: false }));
+    pad.rotation.x = -Math.PI / 2; pad.position.y = .045; g.add(pad);
+    const light = new THREE.PointLight('#ffd27a', 3.6, 10, 1.35); light.position.set(0, 1.8, .25); g.add(light);
+    Object.assign(g.userData, { archMat, beam, pad, light, flash: 0 });
+  }
   const foes = {}; const player = actor('player', spec.player.label, 2.0);
   // fail/fix marks from the agent (window.__MARKS__): red pulsing bug tiles, green fix tiles, arcs for moved spawns
   const MK = []; (window.__MARKS__ || []).forEach(m => { const bug = m.kind === 'bug', col = bug ? '#ff3b3b' : '#35e07a';
@@ -90,19 +106,56 @@ function boot() {
     body.position.y = .55; body.castShadow = true; const ic = new THREE.Sprite(new THREE.SpriteMaterial({ map: emoji(icon, '#ffd27a88'), depthTest: false })); ic.position.y = 1.5; ic.scale.setScalar(.8); ic.renderOrder = 9;
     const ring = new THREE.Mesh(new THREE.TorusGeometry(.55, .04, 8, 48), new THREE.MeshBasicMaterial({ color: '#ffd27a' })); ring.rotation.x = Math.PI / 2; ring.position.y = .03;
     g.add(body, ic, ring); g.userData = { body, ic, ring, born: 0 }; g.scale.setScalar(.001); scene.add(g); return g; }
-  // particles (GPU points, additive)
-  const NP = COARSE ? 160 : 900, pos = new Float32Array(NP * 3), colA = new Float32Array(NP * 3), vel = new Float32Array(NP * 3), life = new Float32Array(NP); let pi = 0;
-  const pg = new THREE.BufferGeometry(); pg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); pg.setAttribute('color', new THREE.BufferAttribute(colA, 3));
-  const pts = new THREE.Points(pg, new THREE.PointsMaterial({ size: .22, map: glowT, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); scene.add(pts);
-  function burst(x, z, n, cols, up = 1) { if (COARSE) n = Math.max(3, n >> 2); for (let i = 0; i < n; i++) { const k = pi++ % NP, a = Math.random() * 6.283, v = .03 + Math.random() * .09, c = new THREE.Color(cols[i % cols.length]);
-    pos.set([x, .6, z], k * 3); vel.set([Math.cos(a) * v, (.06 + Math.random() * .12) * up, Math.sin(a) * v], k * 3); colA.set([c.r, c.g, c.b], k * 3); life[k] = 1; } }
-  const POPS = []; const starT = ctex((x, w, h) => { x.font = 'bold 150px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('⭐', w / 2, h / 2 + 6); x.font = '900 70px "Comic Sans MS",cursive'; x.lineWidth = 10; x.strokeStyle = '#7a3d00'; x.strokeText('+1', w * .8, h * .22); x.fillStyle = '#fff6c2'; x.fillText('+1', w * .8, h * .22); });
-  function popStar(x, z) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: starT, depthTest: false, transparent: true })); s.position.set(x, 1.4, z); s.renderOrder = 12; s.userData.a = 0; scene.add(s); POPS.push(s); }
+  // One instanced pool for every burst. Dead slots stay at scale 0, so a collect or a door opening does not add draw calls.
+  const NP = COARSE ? 96 : 384;
+  const starT = ctex((x, w, h) => {
+    const g = x.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * .48);
+    g.addColorStop(0, '#fff'); g.addColorStop(.32, '#fff8'); g.addColorStop(1, '#fff0');
+    x.fillStyle = g; x.fillRect(0, 0, w, h); x.save(); x.translate(w / 2, h / 2); x.fillStyle = '#fff'; x.beginPath();
+    for (let i = 0; i < 8; i++) { const a = -Math.PI / 2 + i * Math.PI / 4, r = (i % 2 ? .2 : .46) * w, px = Math.cos(a) * r, py = Math.sin(a) * r; i ? x.lineTo(px, py) : x.moveTo(px, py); }
+    x.closePath(); x.fill(); x.restore();
+  }, 64, 64);
+  const pMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: starT, color: '#ffffff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false, side: THREE.DoubleSide }), NP);
+  pMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pMesh.frustumCulled = false; pMesh.count = NP; pMesh.renderOrder = 4; scene.add(pMesh);
+  const pDummy = new THREE.Object3D(), pColor = new THREE.Color();
+  const PX = new Float32Array(NP), PY = new Float32Array(NP), PZ = new Float32Array(NP), PVX = new Float32Array(NP), PVY = new Float32Array(NP), PVZ = new Float32Array(NP);
+  const PLIFE = new Float32Array(NP), PROT = new Float32Array(NP), PSPIN = new Float32Array(NP), PSC = new Float32Array(NP), PR = new Float32Array(NP), PG = new Float32Array(NP), PB = new Float32Array(NP);
+  let pi = 0, spawned = 0;
+  const hideP = k => { pDummy.position.set(0, -40, 0); pDummy.scale.setScalar(0); pDummy.rotation.set(0, 0, 0); pDummy.updateMatrix(); pMesh.setMatrixAt(k, pDummy.matrix); pMesh.setColorAt(k, pColor.setRGB(0, 0, 0)); };
+  for (let k = 0; k < NP; k++) hideP(k);
+  pMesh.instanceMatrix.needsUpdate = true;
+  function burst(x, z, n, cols, up = 1, y0 = .7, spread = 1) {
+    if (COARSE) n = Math.max(3, n >> 2);
+    if (STILL) n = Math.min(n, 16);
+    spawned += n;
+    for (let i = 0; i < n; i++) {
+      const k = pi++ % NP, a = Math.random() * 6.283, v = (.04 + Math.random() * .11) * spread;
+      pColor.set(cols[i % cols.length]);
+      PX[k] = x; PY[k] = y0 + Math.random() * .3; PZ[k] = z;
+      PVX[k] = Math.cos(a) * v; PVY[k] = (.055 + Math.random() * .14) * up; PVZ[k] = Math.sin(a) * v;
+      PLIFE[k] = .75 + Math.random() * .4; PROT[k] = Math.random() * 6.28; PSPIN[k] = (Math.random() - .5) * .4;
+      PSC[k] = .18 + Math.random() * .42; PR[k] = pColor.r; PG[k] = pColor.g; PB[k] = pColor.b;
+    }
+  }
+  function tickParts() {
+    let alive = 0;
+    for (let k = 0; k < NP; k++) {
+      if (PLIFE[k] <= 0) { hideP(k); continue; }
+      alive++; PLIFE[k] -= .016; PVY[k] -= .0036;
+      PX[k] += PVX[k]; PY[k] = Math.max(.05, PY[k] + PVY[k]); PZ[k] += PVZ[k]; PROT[k] += PSPIN[k];
+      const fade = Math.max(0, Math.min(1, PLIFE[k]));
+      pDummy.position.set(PX[k], PY[k], PZ[k]); pDummy.quaternion.copy(cam.quaternion); pDummy.rotateZ(PROT[k]); pDummy.scale.setScalar(PSC[k] * (.7 + fade));
+      pDummy.updateMatrix(); pMesh.setMatrixAt(k, pDummy.matrix); pMesh.setColorAt(k, pColor.setRGB(PR[k] * fade, PG[k] * fade, PB[k] * fade));
+    }
+    pMesh.instanceMatrix.needsUpdate = true; if (pMesh.instanceColor) pMesh.instanceColor.needsUpdate = true;
+    return alive;
+  }
   // ambient pollen motes in the light
   const NM = COARSE ? 36 : 160, mg = new THREE.BufferGeometry(), mp = new Float32Array(NM * 3); for (let i = 0; i < NM; i++) mp.set([(Math.random() - .5) * W * 1.4, Math.random() * 4, (Math.random() - .5) * H * 1.4], i * 3);
   mg.setAttribute('position', new THREE.BufferAttribute(mp, 3)); scene.add(new THREE.Points(mg, new THREE.PointsMaterial({ size: .07, map: glowT, color: '#ffe9a8', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false })));
-  // trail of footsteps
-  const trail = []; const stepM = new THREE.MeshBasicMaterial({ color: '#6fe3ff', transparent: true, opacity: .55, depthWrite: false });
+  // pooled foot rings (fixed draw calls; the moving hero used to allocate a mesh per step)
+  const STEP_N = 16, steps = []; let si = 0;
+  for (let i = 0; i < STEP_N; i++) { const s = new THREE.Mesh(new THREE.CircleGeometry(.12, 10), new THREE.MeshBasicMaterial({ color: '#6fe3ff', transparent: true, opacity: 0, depthWrite: false })); s.rotation.x = -Math.PI / 2; s.visible = false; scene.add(s); steps.push(s); }
   // post: bloom + vignette/grade
   const comp = new EffectComposer(gl); comp.addPass(new RenderPass(scene, cam)); const bloom = new UnrealBloomPass(new THREE.Vector2(COARSE ? 256 : 512, COARSE ? 192 : 384), COARSE ? .22 : .55, COARSE ? .35 : .6, COARSE ? .9 : .82); comp.addPass(bloom);
   const grade = new ShaderPass({ uniforms: { tDiffuse: { value: null }, t: { value: 0 }, flash: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) }, grain: { value: COARSE ? 0 : .035 } },
@@ -111,65 +164,76 @@ function boot() {
   comp.addPass(grade); comp.addPass(new OutputPass());
   function size() { const r = c2.getBoundingClientRect(), pw = c2.offsetParent ? c2.offsetLeft : 0; cv.style.left = c2.offsetLeft + 'px'; cv.style.top = c2.offsetTop + 'px';
     const w = Math.max(64, Math.round(r.width)), h = Math.max(48, Math.round(r.height)); if (cv._w !== w || cv._h !== h) { cv._w = w; cv._h = h; gl.setSize(w, h); comp.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix(); } }
-  const seen = { st: 'playing', col: 0, px: spec.player.x, py: spec.player.y, ev: 0 }; let WT = null, shake = 0, flash = 0, tintT = new THREE.Color(1, 1, 1), winT = 0;
-  const pp = new THREE.Vector3(X(spec.player.x), 0, Z(spec.player.y)); let hop = 0, land = 0, dolly = 1.2, idleT = 0, lastMv = 0; const RINGS = [];
-  function ring(x, z, col = '#fff6e0', sp = 1.09) { const m = new THREE.Mesh(new THREE.RingGeometry(.15, .28, 24), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .7, depthWrite: false })); m.rotation.x = -Math.PI / 2; m.position.set(x, .04, z); m.userData.sp = sp; scene.add(m); RINGS.push(m); }
+  const seen = { st: 'playing', col: 0, px: spec.player.x, py: spec.player.y, ev: 0, got: new Set() }; let WT = null, shake = 0, flash = 0, bloomKick = 0, heroPulse = 0, tintT = new THREE.Color(1, 1, 1), winT = 0;
+  const nudge = n => { if (!STILL) shake = Math.max(shake, n); };
+  const pp = new THREE.Vector3(X(spec.player.x), 0, Z(spec.player.y)); let hop = 0, land = 0, dolly = 1.2, idleT = 0, lastMv = 0;
+  const RING_N = 8, ringPool = []; let ri = 0;
+  for (let i = 0; i < RING_N; i++) { const m = new THREE.Mesh(new THREE.RingGeometry(.15, .28, 20), new THREE.MeshBasicMaterial({ color: '#fff6e0', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); ringPool.push(m); }
+  function ring(x, z, col = '#fff6e0', sp = 1.09) { const m = ringPool[ri++ % RING_N]; m.visible = true; m.position.set(x, .04, z); m.scale.setScalar(1); m.material.color.set(col); m.material.opacity = .75; m.userData.sp = sp; }
+  const juiceLight = new THREE.PointLight('#ffd54f', 0, 7.5, 2); juiceLight.position.set(0, -4, 0); scene.add(juiceLight);
   const hint = new THREE.Mesh(new THREE.ConeGeometry(.35, .7, 4), new THREE.MeshStandardMaterial({ color: '#ffe27a', emissive: '#ffb300', emissiveIntensity: 1.2 })); hint.rotation.x = Math.PI; hint.visible = false; scene.add(hint);
   const hintG = new THREE.Mesh(new THREE.RingGeometry(.55, .8, 32), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending })); hintG.rotation.x = -Math.PI / 2; hintG.visible = false; scene.add(hintG);
-  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full' };
-  const still = new URLSearchParams(location.search).get('still') === '1' || matchMedia('(prefers-reduced-motion: reduce)').matches; let freeze = 0;
-  function frame() { requestAnimationFrame(frame); size(); if (freeze > 0) { freeze--; comp.render(); return; } const t = still ? 2 : clock.getElapsedTime(), S = G.state(), gates = G.gates ? G.gates() : [];
+  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED };
+  // Composer resets the draw-call counter on every pass, so keep the main scene pass.
+  let sceneCalls = 0; const renderScene = gl.render.bind(gl);
+  gl.render = (s, c) => { renderScene(s, c); if (s === scene) sceneCalls = gl.info.render.calls; };
+  let freeze = 0;
+  function frame() { requestAnimationFrame(frame); size(); const now = clock.getElapsedTime(); if (freeze > 0) { freeze--; comp.render(); window.__STAGE3D__.frames++; return; } const t = STILL ? 2 : now, S = G.state(), gates = G.gates ? G.gates() : [];
     // juice from state deltas
-    const P = S.player; if (P.x !== seen.px || P.y !== seen.py) { hop = 1; const s = new THREE.Mesh(new THREE.CircleGeometry(.12, 16), stepM.clone()); s.rotation.x = -Math.PI / 2; s.position.set(X(seen.px), .03, Z(seen.py)); scene.add(s); trail.push(s); if (trail.length > 40) scene.remove(trail.shift()); seen.px = P.x; seen.py = P.y; burst(X(P.x), Z(P.y), 6, ['#bdf3ff', '#fff'], .4); }
-    if (S.collected.length > seen.col) { burst(X(P.x), Z(P.y), 90, ['#ffd54f', '#ffb300', '#fff59d']); popStar(X(P.x), Z(P.y)); ring(X(P.x), Z(P.y), '#ffd54f', 1.25); ring(X(P.x), Z(P.y), '#fff6c2', 1.15); burst(X(P.x), Z(P.y), 40, ['#ffffff', '#ffe082'], 2.2); shake = Math.max(shake, .08); flash = .12; freeze = 3; seen.col = S.collected.length; }
-    if (S.collected.length < seen.col) seen.col = S.collected.length;
-    for (let i = seen.ev; i < S.events.length; i++) { const e = S.events[i]; if (e === 'bump' || e.startsWith('gate:') || e.startsWith('sealed:')) shake = Math.max(shake, .12); if (e === 'door_open' && doorA) { burst(doorA.position.x, doorA.position.z, 200, ['#fff6c2', '#ffd27a', '#7dffb0', '#b388ff'], 1.4); flash = .05; tintT.set(1.1, 1.0, .88); setTimeout(() => tintT.set(1, 1, 1), 900); freeze = 3; shake = .14; dolly = 1; }
-      if (e.startsWith('gatefail:')) { shake = .4; tintT.set(1.4, .6, .6); } if (e.startsWith('open:')) { const g = gates.find(q => 'open:' + q.id === e); if (g) burst(X(g.cell[0]), Z(g.cell[1]), 120, ['#ffd27a', '#7dffb0', '#b388ff']); flash = .12; } }
+    const P = S.player; if (P.x !== seen.px || P.y !== seen.py) { hop = 1; const s = steps[si++ % STEP_N]; s.visible = true; s.position.set(X(seen.px), .03, Z(seen.py)); s.scale.setScalar(1); s.material.opacity = .55; seen.px = P.x; seen.py = P.y; if (!STILL) burst(X(P.x), Z(P.y), 6, ['#bdf3ff', '#fff'], .4); }
+    if (S.collected.length < seen.col) { seen.col = S.collected.length; seen.got = new Set(S.collected); goals.forEach(g => { if (!S.collected.includes(g.userData.id)) { g.userData.bye = null; g.scale.setScalar(1); } }); }
+    const fresh = (S.collected || []).filter(id => !seen.got.has(id));
+    if (fresh.length) { fresh.forEach(id => { const g = goals.find(q => q.userData.id === id); const x = g ? g.position.x : X(P.x), z = g ? g.position.z : Z(P.y); if (g) g.userData.bye = now; burst(x, z, 72, ['#ffd54f', '#ffb300', '#fff59d', '#fff'], 1.35, .9, 1.15); burst(x, z, 28, ['#ffffff', '#ffe082'], 2.5, 1.2, .8); ring(x, z, '#ffd54f', 1.16); juiceLight.position.set(x, 1.3, z); }); juiceLight.intensity = 8; heroPulse = 1; bloomKick = Math.max(bloomKick, .9); flash = Math.max(flash, .24); nudge(.2); if (!STILL) freeze = 2; seen.col = S.collected.length; seen.got = new Set(S.collected); }
+    if (S.events.length < seen.ev) seen.ev = 0;
+    for (let i = seen.ev; i < S.events.length; i++) { const e = S.events[i]; if (e === 'bump' || e.startsWith('gate:') || e.startsWith('sealed:')) nudge(.12); if (e === 'door_open' && doorA) { burst(doorA.position.x, doorA.position.z, 150, ['#fff6c2', '#ffd27a', '#7dffb0', '#b388ff', '#fff'], 1.7, .85, 1.45); burst(doorA.position.x, doorA.position.z, 70, ['#fff', '#ffe082', '#fff6c2'], 2.8, 1.3, .85); ring(doorA.position.x, doorA.position.z, '#fff6c2', 1.12); ring(doorA.position.x, doorA.position.z, '#ffd27a', 1.2); doorA.userData.flash = 1; juiceLight.position.set(doorA.position.x, 1.7, doorA.position.z); juiceLight.intensity = 12; bloomKick = Math.max(bloomKick, 1.2); flash = Math.max(flash, .3); tintT.set(1.12, 1.02, .86); setTimeout(() => tintT.set(1, 1, 1), 900); if (!STILL) freeze = 3; nudge(.18); dolly = 1; }
+      if (e.startsWith('gatefail:')) { nudge(.4); tintT.set(1.4, .6, .6); } if (e.startsWith('open:')) { const g = gates.find(q => 'open:' + q.id === e); if (g) burst(X(g.cell[0]), Z(g.cell[1]), 80, ['#ffd27a', '#7dffb0', '#b388ff']); flash = Math.max(flash, .12); bloomKick = Math.max(bloomKick, .4); } }
     seen.ev = S.events.length;
-    if (S.status !== seen.st) { if (S.status === 'won') { if (!WT) { WT = winTitle('¡GANASTE!'); scene.add(WT); } WT.visible = true; WT.position.set(0, 3.2, 0); WT.userData.t0 = t; winT = t; flash = .22; freeze = 5; for (let k = 0; k < 4; k++) burst(X(P.x) + (Math.random() - .5) * 3, Z(P.y) + (Math.random() - .5) * 2, 160, ['#ffd54f', '#66bb6a', '#42a5f5', '#ec407a', '#ab47bc'], 1.5); tintT.set(1.15, 1.05, .9); }
-      else if (S.status === 'lost') { shake = .6; freeze = 4; burst(X(P.x), Z(P.y), 140, ['#ef5350', '#90caf9', '#2b2118']); tintT.set(1.3, .65, .7); } else { if (WT) WT.visible = false; tintT.set(1, 1, 1); trail.splice(0).forEach(s => scene.remove(s)); winT = 0; } seen.st = S.status; }
-    if (Math.random() < (COARSE ? .1 : .5)) burst(pp.x + (Math.random() - .5) * .4, pp.z + .2, 1, ['#ff9ad5', '#ffe27a', '#9be7ff'], .25);
+    if (S.status !== seen.st) { if (S.status === 'won') { if (!WT) { WT = winTitle('¡GANASTE!'); scene.add(WT); } WT.visible = true; WT.position.set(0, 3.2, 0); WT.userData.t0 = t; winT = t; flash = .22; bloomKick = Math.max(bloomKick, .7); if (!STILL) freeze = 5; for (let k = 0; k < 4; k++) burst(X(P.x) + (Math.random() - .5) * 3, Z(P.y) + (Math.random() - .5) * 2, 70, ['#ffd54f', '#66bb6a', '#42a5f5', '#ec407a', '#ab47bc'], 1.5); tintT.set(1.15, 1.05, .9); }
+      else if (S.status === 'lost') { nudge(.55); if (!STILL) freeze = 4; burst(X(P.x), Z(P.y), 80, ['#ef5350', '#90caf9', '#2b2118']); tintT.set(1.3, .65, .7); } else { if (WT) WT.visible = false; tintT.set(1, 1, 1); steps.forEach(s => { s.visible = false; }); winT = 0; } seen.st = S.status; }
+    if (!STILL && Math.random() < (COARSE ? .04 : .1)) burst(pp.x + (Math.random() - .5) * .4, pp.z + .2, 1, ['#ff9ad5', '#ffe27a', '#9be7ff'], .25);
     // actors
     pp.lerp(new THREE.Vector3(X(P.x), 0, Z(P.y)), .28); if (hop > .05 && hop * .86 <= .05) { land = 1; ring(pp.x, pp.z); burst(pp.x, pp.z, 10, ['#e8d9b8', '#fff8e6', '#cdb98f'], .25); } hop *= .86; land *= .8; player.position.set(pp.x, Math.sin((1 - hop) * Math.PI) * hop * .5, pp.z);
     const sq = (1 + Math.sin(t * 5) * .04) * (1 - land * .25) * (1 + hop * .15); player.userData.q.scale.set(1 / sq, sq, 1); player.userData.q.rotation.z = Math.sin(t * 2.3) * .05;
+    player.userData.q.material.emissiveIntensity = .08 + heroPulse * 2.2; player.userData.q.material.emissive.set(heroPulse > .04 ? '#ffe7a0' : '#ffffff'); heroPulse *= .9; juiceLight.intensity *= .88; if (juiceLight.intensity < .05) juiceLight.intensity = 0;
     if (S.status === 'won') { player.position.y += Math.min(3, (t - winT) * 1.2); player.rotation.y = (t - winT) * 4; }
     if (S.status === 'lost') player.userData.q.rotation.z = Math.min(1.5, player.userData.q.rotation.z + .2);
-    goals.forEach((g, i) => { g.visible = !S.collected.includes(g.userData.id); g.userData.q.position.y = g.userData.size / 2 + .15 + Math.sin(t * 2 + i) * .12; g.userData.q.rotation.y = Math.sin(t * 1.3 + i) * .5; g.userData.halo.material.opacity = .6 + Math.sin(t * 3 + i) * .3; });
+    goals.forEach((g, i) => { const got = S.collected.includes(g.userData.id); if (!got) g.userData.bye = null; else if (g.userData.bye == null) g.userData.bye = now; const age = g.userData.bye == null ? -1 : now - g.userData.bye; const popping = !STILL && age >= 0 && age < .38; g.visible = !got || popping; if (popping) { const k = age / .38; g.scale.setScalar(1 + Math.sin(k * Math.PI) * .55); g.userData.q.material.emissive.set('#ffe27a'); g.userData.q.material.emissiveIntensity = .3 + (1 - k) * 2.4; g.userData.halo.material.opacity = 1; g.userData.q.position.y = g.userData.size / 2 + .25; } else if (!got) { if (g.scale.x !== 1) g.scale.setScalar(1); g.userData.q.material.emissiveIntensity = .08; g.userData.q.material.emissive.set('#ffffff'); g.userData.q.position.y = g.userData.size / 2 + .15 + Math.sin(t * 2 + i) * .12; g.userData.q.rotation.y = Math.sin(t * 1.3 + i) * .5; g.userData.halo.material.opacity = .6 + Math.sin(t * 3 + i) * .3; } });
     npcs.forEach((n, i) => n.userData.q.position.y = n.userData.size / 2 + Math.abs(Math.sin(t * 3 + i)) * .1);
     const live = new Set(); S.foes.forEach((f, i) => { live.add(f.id); const a = foes[f.id] || (foes[f.id] = (() => { const z = actor('enemy', f.label, 1.9, f.id); z.position.set(X(f.x), 0, Z(f.y)); return z; })());
       a.visible = true; a.position.lerp(new THREE.Vector3(X(f.x), 0, Z(f.y)), .2); a.userData.q.rotation.z = Math.sin(t * 4 + i) * .12; a.userData.halo.material.opacity = .35 + Math.sin(t * 6 + i) * .2; });
     Object.keys(foes).forEach(k => { if (!live.has(k)) foes[k].visible = false; });
-    if (doorA) { const o = S.doorOpen; doorA.userData.halo.material.opacity = o ? .9 + Math.sin(t * 5) * .1 : .15; doorA.userData.halo.scale.setScalar(o ? 3.6 + Math.sin(t * 4) * .3 : 2.2); doorA.userData.q.material.emissiveIntensity = o ? .6 + Math.sin(t * 4) * .2 : .02; doorA.userData.q.material.color.set(o ? '#ffffff' : '#8a8aa0'); if (o && Math.random() < (COARSE ? .08 : .3)) burst(doorA.position.x + (Math.random() - .5), doorA.position.z, 2, ['#fff6c2', '#ffd27a'], .6); }
+    if (doorA) { const o = !!S.doorOpen, ud = doorA.userData, pulse = STILL ? .85 : (.5 + .5 * Math.sin(now * (o ? 4.2 : 2.5))), beat = STILL ? (o ? .35 : 0) : Math.pow(Math.max(0, Math.sin(now * (o ? 6.5 : 3))), 2), near = Math.hypot(doorA.position.x - pp.x, doorA.position.z - pp.z) < 3.2 ? 1.7 : 1; ud.halo.material.opacity = (o ? .92 : .72) + pulse * .12; ud.halo.scale.setScalar((o ? 4.2 : 3.15) + pulse * .75); ud.q.material.color.set('#ffffff'); ud.q.material.emissive.set('#fff1c2'); ud.q.material.emissiveIntensity = (o ? 1.05 : .75) + pulse * .5 + (ud.flash || 0) * 1.5; ud.q.position.y = ud.size / 2 + (STILL ? 0 : Math.sin(now * 2.2) * .06); if (ud.light) ud.light.intensity = (o ? 6.4 : 3.5) + pulse * (o ? 3.4 : 2.2) + (ud.flash || 0) * 8; if (ud.beam) { ud.beam.material.opacity = (o ? .58 : .4) + pulse * .2; const bs = .92 + pulse * .2; ud.beam.scale.set(bs, 1, bs); } if (ud.pad) { ud.pad.scale.setScalar(1 + pulse * .16 + beat * .18 * near); ud.pad.material.opacity = .42 + pulse * .4; } if (ud.archMat) ud.archMat.color.set(o ? '#fff8d8' : '#ffd56a'); if (ud.flash) ud.flash *= .9; doorA.scale.setScalar(1 + (o ? .05 : .028) * pulse + beat * (o ? .07 * near : .02)); if (o && !STILL && Math.random() < (COARSE ? .04 : .12)) burst(doorA.position.x + (Math.random() - .5) * .5, doorA.position.z, 2, ['#fff6c2', '#ffd27a'], .8, 1.4, .45); }
     HZ.forEach((m, i) => { m.material.emissiveIntensity = m.userData.haz === 'f' ? 1.2 + Math.sin(t * 9 + i) * .5 : .35 + Math.sin(t * 2 + i) * .15; });
     MK.forEach((m, i) => { if (m.userData.bug !== undefined) { m.rotation.z = t * (m.userData.bug ? 1.5 : -.8); m.material.opacity = m.userData.bug ? .5 + .5 * Math.sin(t * 6) : .85; } });
     // gates: cleared + NEXT one only (mirrors game.js stagger)
     const nx = gates.findIndex(g => !g.open); gates.forEach((g, i) => { const show = nx < 0 || i <= nx; [['a', g.cell, g.open ? 'open' : 'locked'], ['b', g.alt, g.sealed ? 'sealed' : g.open ? 'open' : 'locked']].forEach(([s, cl, mode]) => { if (!cl) return; const k = g.id + s; let d = gateMesh[k];
       if (!d) d = gateMesh[k] = door(GI[g.kind] || '🔒'); d.visible = show; if (!show) { d.userData.born = 0; d.scale.setScalar(.001); return; } if (!d.userData.born) { d.userData.born = t; burst(X(cl[0]), Z(cl[1]), 40, ['#ffd27a', '#ff8ac2']); }
       const age = t - d.userData.born, el = Math.min(1, age / .6), pop = el < 1 ? 1 + Math.sin(el * Math.PI) * .35 : 1; d.position.set(X(cl[0]), 0, Z(cl[1])); d.scale.setScalar(Math.max(.001, el * pop * 1.15)); d.userData.update(t, mode); }); });
-    for (let i = POPS.length - 1; i >= 0; i--) { const s = POPS[i]; s.userData.a += .016; const a = s.userData.a, e = a < .25 ? a / .25 : 1; s.scale.setScalar(.2 + e * 1.6 * (1 + Math.sin(Math.min(1, a / .25) * Math.PI) * .4)); s.position.y += .02; s.material.opacity = Math.max(0, 1 - Math.max(0, a - .7) / .5); if (a > 1.2) { scene.remove(s); POPS.splice(i, 1); } }
-    // particles
-    for (let k = 0; k < NP; k++) if (life[k] > 0) { life[k] -= .012; vel[k * 3 + 1] -= .003; pos[k * 3] += vel[k * 3]; pos[k * 3 + 1] = Math.max(.02, pos[k * 3 + 1] + vel[k * 3 + 1]); pos[k * 3 + 2] += vel[k * 3 + 2]; colA[k * 3] *= .985; colA[k * 3 + 1] *= .985; colA[k * 3 + 2] *= .985; if (life[k] <= 0) pos[k * 3 + 1] = -99; }
-    pg.attributes.position.needsUpdate = pg.attributes.color.needsUpdate = true;
-    for (let i = 0; i < NM; i++) { mp[i * 3 + 1] = (mp[i * 3 + 1] + .004) % 4; mp[i * 3] += Math.sin(t + i) * .002; } mg.attributes.position.needsUpdate = true;
-    for (let i = RINGS.length - 1; i >= 0; i--) { const m = RINGS[i]; m.scale.multiplyScalar(m.userData.sp || 1.09); m.material.opacity *= .88; if (m.material.opacity < .02) { scene.remove(m); RINGS.splice(i, 1); } }
-    if (doorA) { const dd = Math.hypot(doorA.position.x - pp.x, doorA.position.z - pp.z), beat = Math.pow(Math.max(0, Math.sin(t * 7.5)), 8); doorA.scale.setScalar(1 + (S.doorOpen ? .05 + beat * .08 * (dd < 3 ? 2 : 1) : 0)); }
+    for (let i = 0; i < NM; i++) { mp[i * 3 + 1] = (mp[i * 3 + 1] + (STILL ? 0 : .004)) % 4; if (!STILL) mp[i * 3] += Math.sin(t + i) * .002; } mg.attributes.position.needsUpdate = true;
+    ringPool.forEach(m => { if (!m.visible) return; m.scale.multiplyScalar(m.userData.sp || 1.09); m.material.opacity *= .9; if (m.material.opacity < .03 || m.scale.x > 8) m.visible = false; });
+    steps.forEach(s => { if (!s.visible) return; s.material.opacity *= .94; s.scale.multiplyScalar(1.02); if (s.material.opacity < .04) s.visible = false; });
     if (P.x !== seen.hx || P.y !== seen.hy) { seen.hx = P.x; seen.hy = P.y; lastMv = t; } idleT = t - lastMv;
     { let tg = null; if (S.status === 'playing' && idleT > 5) { const gl = goals.filter(g => g.visible); if (gl.length) tg = gl.reduce((a, b) => (a.position.distanceTo(pp) < b.position.distanceTo(pp) ? a : b)); else if (doorA && S.doorOpen) tg = doorA; }
-      hint.visible = hintG.visible = !!tg; if (tg) { hintG.position.set(tg.position.x, .05, tg.position.z); hintG.scale.setScalar(1.2 + Math.abs(Math.sin(t * 4)) * .6 * (idleT > 10 ? 1.6 : 1)); hintG.material.opacity = .45 + Math.sin(t * 8) * .25; if (Math.random() < (COARSE ? .08 : .25)) burst(tg.position.x, tg.position.z, 2, ['#ffe27a', '#fff'], .8); hint.position.set(tg.position.x, 2.6 + Math.abs(Math.sin(t * 4)) * .5, tg.position.z); hint.rotation.y = t * 2; hint.scale.setScalar((idleT > 10 ? 1.6 : 1.2) * (1 + Math.pow(Math.max(0, Math.sin(t * 6)), 6) * .25)); } }
+      hint.visible = hintG.visible = !!tg; if (tg) { hintG.position.set(tg.position.x, .05, tg.position.z); hintG.scale.setScalar(1.2 + Math.abs(Math.sin(t * 4)) * .6 * (idleT > 10 ? 1.6 : 1)); hintG.material.opacity = .45 + Math.sin(t * 8) * .25; if (!STILL && Math.random() < (COARSE ? .05 : .14)) burst(tg.position.x, tg.position.z, 2, ['#ffe27a', '#fff'], .8); hint.position.set(tg.position.x, 2.6 + Math.abs(Math.sin(t * 4)) * .5, tg.position.z); hint.rotation.y = t * 2; hint.scale.setScalar((idleT > 10 ? 1.6 : 1.2) * (1 + Math.pow(Math.max(0, Math.sin(t * 6)), 6) * .25)); } }
     dolly *= .97; cam.fov = 60 - dolly * 14 + (S.status === 'won' ? 4 : 0); cam.updateProjectionMatrix();
     // camera: slow cinematic drift + follow + shake; win = crane up
     const D = Math.max(W, H), win = S.status === 'won' ? Math.min(1, (t - winT) / 2) : 0;
     // third-person chase cam (Crash / Dreamlight): low, behind the hero, world fills the frame; win = crane up
     const tx = pp.x, tz = pp.z, br = 1 + Math.sin(t * .4) * .01;
     cam.position.set(tx * .7 + Math.sin(t * .11) * .15, (3.7 + win * 2.5) * br + Math.sin(t * .23) * .04, tz + 8.4 + win * 1.5);
-    if (shake > .005) { cam.position.x += (Math.random() - .5) * shake; cam.position.y += (Math.random() - .5) * shake; shake *= .86; }
+    if (!STILL && shake > .005) { cam.position.x += (Math.random() - .5) * shake; cam.position.y += (Math.random() - .5) * shake * .65; shake *= .82; } else shake = 0;
     cam.lookAt(tx * .65, .8 + win * 1.2, tz - 2.6);
     // billboards face camera (yaw only)
     scene.traverse(o => { if (o.userData && o.userData.q && !(o === player && S.status === 'won')) o.rotation.y = Math.atan2(cam.position.x - o.position.x, cam.position.z - o.position.z); });
-    flash *= .9; grade.uniforms.flash.value = flash; grade.uniforms.t.value = t; grade.uniforms.tint.value.lerp(tintT, .06); bloom.strength = (COARSE ? .2 : .5) + flash * (COARSE ? .25 : .6) + (S.status === 'won' ? (COARSE ? .15 : .4) : 0);
-    if (S.status === 'won' && t - winT < 2.5 && Math.random() < (COARSE ? .18 : .6)) burst(pp.x + (Math.random() - .5) * 4, pp.z + (Math.random() - .5) * 2, 8, ['#ff5c8a', '#ffd54f', '#6fe3ff', '#7dffb0', '#c38bff'], 1.6);
+    flash *= .9; grade.uniforms.flash.value = flash; grade.uniforms.t.value = t; grade.uniforms.tint.value.lerp(tintT, .06);
+    const baseB = COARSE ? .2 : .5, baseTh = COARSE ? .9 : .82;
+    bloom.strength = baseB + Math.min(1.3, bloomKick + flash * .5) + (S.status === 'won' ? (COARSE ? .15 : .4) : 0);
+    bloom.threshold = Math.max(.26, baseTh - bloomKick * .48); bloomKick *= .9;
+    if (!STILL && S.status === 'won' && t - winT < 2.5 && Math.random() < (COARSE ? .12 : .4)) burst(pp.x + (Math.random() - .5) * 4, pp.z + (Math.random() - .5) * 2, 8, ['#ff5c8a', '#ffd54f', '#6fe3ff', '#7dffb0', '#c38bff'], 1.6);
     if (WT && WT.visible) WT.userData.update(t - WT.userData.t0, 1 / 60);
-    comp.render(); window.__STAGE3D__.frames++;
+    const alive = tickParts();
+    comp.render();
+    const fx = window.__STAGE3D__; fx.frames++; fx.bloom = +bloom.strength.toFixed(3); fx.shake = STILL ? 0 : +shake.toFixed(3); fx.doorLight = doorA && doorA.userData.light ? +doorA.userData.light.intensity.toFixed(2) : 0; fx.alive = alive; fx.spawned = spawned; fx.calls = sceneCalls;
   }
   frame();
   G.render_game_to_text = () => { const S = G.state(); return JSON.stringify({ engine: 'three', status: S.status, player: [S.player.x, S.player.y], foes: S.foes.map(f => [f.id, f.x, f.y]), collected: S.collected, gates: (G.gates ? G.gates() : []).map(g => [g.id, g.open]) }); }; window.render_game_to_text = G.render_game_to_text;

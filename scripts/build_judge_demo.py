@@ -91,7 +91,14 @@ if a.scene:
             if (_s3 / f"kid_{n+1}_3d.png").exists(): B["art"]["id:" + c["id"]] = _b64png(_s3 / f"kid_{n+1}_3d.png", 256)
     if _art_w.get("door"): B["art"]["door"] = _b64png(ROOT / _art_w["door"], 512)
     _gq = _sc.get("gate"); _pg = [g for g in plan_gates(_sc, tr) if g["kind"] == "question"]
-    B["gates"] = [{**_pg[0], "prompt": _gq["q"], "options": _gq["options"], "answer": _gq["answer"]}] if _gq and _pg else []
+    if _gq and _pg:
+        _g = {**_pg[0], "prompt": _gq["q"], "options": _gq["options"], "answer": _gq["answer"]}
+        if _gq.get("q_es"): _g["prompt_es"] = _gq["q_es"]
+        if _gq.get("options_es"): _g["options_es"] = _gq["options_es"]
+        if "answer_es" in _gq: _g["answer_es"] = _gq["answer_es"]
+        B["gates"] = [_g]
+    else:
+        B["gates"] = []
     B["scene_intro"] = _sc.get("intro", "")
 if a.play: _l, _t, _n, _sn = (a.play.split("/") + ["", "", "", ""])[:4]; B["play"] = {"level": int(_l), "total": int(_t), "next": _n, "scene": _sn}
 tpl = (ROOT / "game/demo.template.html").read_text()

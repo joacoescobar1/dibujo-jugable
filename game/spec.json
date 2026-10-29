@@ -1,5 +1,6 @@
 {
-  "title": "El gato va a casa",
+  "title": "The cat goes home",
+  "title_es": "El gato va a casa",
   "source": {
     "voice_transcript": "El gato tiene que llegar a la casa, no puede tocar el agua"
   },
@@ -11,7 +12,8 @@
   },
   "player": {
     "id": "gato",
-    "label": "Gato",
+    "label": "Cat",
+    "label_es": "Gato",
     "x": 1,
     "y": 1,
     "color": "#f90"
@@ -19,7 +21,8 @@
   "goals": [
     {
       "id": "casa",
-      "label": "Casa",
+      "label": "House",
+      "label_es": "Casa",
       "x": 14,
       "y": 10,
       "color": "#4c4"
@@ -28,7 +31,8 @@
   "hazards": [
     {
       "id": "rio",
-      "label": "Agua",
+      "label": "Water",
+      "label_es": "Agua",
       "x": 6,
       "y": 0,
       "w": 2,
