@@ -171,10 +171,10 @@ body.play #ov{background:none!important}body.play #ov #ovt,body.play #ov small{o
 #stick.hot .ring{box-shadow:0 0 0 5px #fff,inset 0 0 22px #6fe3ff88}
 @media (max-width:700px){#dpad{width:208px;height:208px;grid-template-columns:64px 64px 64px;grid-template-rows:64px 64px 64px;gap:8px}#dpad button{width:64px;height:64px;min-width:64px;min-height:64px;font-size:28px}#stick{width:140px;height:140px}#stick .knob{width:64px;height:64px;margin:-32px 0 0 -32px}}
 #onb{position:fixed;inset:0;z-index:94;background:#07050fe0;display:flex;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top)) 16px calc(18px + env(safe-area-inset-bottom));touch-action:none}#onb .card{width:min(92vw,520px);background:#241545;color:#fff;border-radius:28px;padding:26px 18px;box-shadow:0 0 0 4px #ffd27a,0 24px 60px #000;display:flex;flex-direction:column;gap:14px;font:800 clamp(22px,6vw,34px)/1.35 "Comic Sans MS","Chalkboard SE",cursive;text-align:center}#onb .go{font-size:clamp(16px,4vw,20px);opacity:.75}
-body.touch #tale,body.touch #skip{bottom:calc(268px + env(safe-area-inset-bottom))}
+body.touch #skip{bottom:calc(268px + env(safe-area-inset-bottom))}
 #pzo .hint{max-width:min(92vw,520px)}#pzo .row2{flex-wrap:wrap;justify-content:center}
 @media (max-width:430px){#ps .drop{flex-direction:column;gap:10px}#ps .drop label{width:min(86vw,300px);height:112px}#ps .duo{flex-direction:column;gap:8px}#ps .duo img{width:min(78vw,320px)}#ps .duo b{font-size:36px}#ps .stage{width:min(92vw,620px)}#ps .steps{flex-wrap:wrap;justify-content:center;max-width:94vw}#ps .steps b{min-width:0}}
-@media (prefers-reduced-motion:reduce){#h3c.in,#h3c.out,#h3c .pip.pop,#combo.on{animation:none!important}#tale{transition:none!important;opacity:1;transform:translateX(-50%)}#combo.on{opacity:1;transform:translate(-50%,-50%) scale(1)}#wipe,#wipe.iris,#wipe.band{transition-duration:.01ms!important}}
+@media (prefers-reduced-motion:reduce){#h3c.in,#h3c.out,#h3c .pip.pop,#combo.on,#tale .art{animation:none!important}#tale{transition:none!important}#combo.on{opacity:1;transform:translate(-50%,-50%) scale(1)}#wipe,#wipe.iris,#wipe.band{transition-duration:.01ms!important}}
 #home{position:fixed;z-index:71;top:calc(10px + env(safe-area-inset-top));left:calc(10px + env(safe-area-inset-left));min-height:64px;min-width:112px;padding:0 16px;display:flex;align-items:center;justify-content:center;border-radius:18px;background:#120818f5;color:#fffaf2;text-decoration:none;font:800 22px/1 "Comic Sans MS","Chalkboard SE",cursive;box-shadow:0 0 0 3px #ffd27acc,0 8px 18px #000a;touch-action:manipulation}
 #pzo a.home{min-height:64px;min-width:180px;padding:16px 28px;border-radius:999px;background:#ffffff22;color:#fff;text-decoration:none;font:800 clamp(18px,4.5vw,28px)/1 "Comic Sans MS",cursive;box-shadow:0 0 0 2px #ffffff55 inset;display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation}
 body.play #gate.on{position:fixed!important;inset:0!important;z-index:80!important;display:flex!important;pointer-events:auto!important;border-radius:0!important}
@@ -183,7 +183,24 @@ body.modal-open #dpad,body.modal-open #stick,body.transitioning #dpad,body.trans
 #demoNote .card{width:min(92vw,520px);background:#241545;color:#fff;border-radius:28px;padding:22px 18px;box-shadow:0 0 0 4px #ffd27a,0 24px 60px #000;display:flex;flex-direction:column;gap:12px;align-items:center;font:800 clamp(18px,4.6vw,26px)/1.35 "Comic Sans MS","Chalkboard SE",cursive;text-align:center}
 #demoNote img{width:min(70vw,280px);max-height:220px;object-fit:contain;border-radius:16px;background:#0006}
 #demoNote .tr{font-size:clamp(14px,3.6vw,18px);font-weight:650;opacity:.9}
-#demoNote .big{font:800 clamp(20px,5vw,28px) inherit;padding:16px 36px;min-height:64px;border:0;border-radius:999px;cursor:pointer;color:#2b1600;background:linear-gradient(180deg,#ffe27a,#ff9f1c);box-shadow:0 8px 0 #b35c00}`;
+#demoNote .big{font:800 clamp(20px,5vw,28px) inherit;padding:16px 36px;min-height:64px;border:0;border-radius:999px;cursor:pointer;color:#2b1600;background:linear-gradient(180deg,#ffe27a,#ff9f1c);box-shadow:0 8px 0 #b35c00}
+#hud3{top:calc(96px + env(safe-area-inset-top));left:calc(12px + env(safe-area-inset-left));right:calc(12px + env(safe-area-inset-right));gap:8px}
+#hud3 .pill{background:#120818f5;color:#fffaf2;padding:8px 16px;min-height:44px;font:800 22px/1.15 "Comic Sans MS","Chalkboard SE",cursive;border-radius:999px;box-shadow:0 0 0 3px #ffd27a,0 8px 18px #0008;letter-spacing:.01em;display:inline-flex;align-items:center}
+#h3c{max-width:min(96vw,640px)}#h3c .kicker{font-size:13px;letter-spacing:.14em}
+#pz{background:#ffd27a;color:#2b1600;box-shadow:0 6px 0 #b35c00,0 0 0 3px #fff;font-size:34px}
+#mu{box-shadow:0 0 0 3px #ffd27acc}
+#pzo #jt{position:static;top:auto;right:auto;bottom:auto;z-index:1;min-height:56px;min-width:180px;padding:14px 22px;border-radius:999px;background:#ffffff22;color:#fff;text-decoration:none;font:800 20px/1 "Comic Sans MS","Chalkboard SE",cursive;box-shadow:0 0 0 2px #ffffff55 inset;display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation}
+#onb .kicker{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:#ffd27a}
+#tale{position:fixed;inset:0;left:0;top:0;right:0;bottom:0;z-index:92;width:auto;height:auto;max-width:none;margin:0;display:flex;align-items:center;justify-content:center;padding:calc(18px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));background:#07050ee8;color:#fffaf2;border:0;border-radius:0;box-shadow:none;opacity:1;transform:none;transition:none;touch-action:none;cursor:pointer;font:800 clamp(22px,5.4vw,34px)/1.3 "Comic Sans MS","Chalkboard SE",cursive;text-align:center}
+body.touch #tale{left:0;bottom:0;transform:none}
+#tale .card{width:min(92vw,520px);background:#241545;border-radius:28px;padding:22px 18px 18px;box-shadow:0 0 0 4px #ffd27a,0 24px 60px #000;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+#tale .kicker{display:block;font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#ffd27a;margin:0}
+#tale .art{font-size:96px;line-height:1;margin:2px 0}
+#tale .line{margin:0;font:800 clamp(22px,5.4vw,34px)/1.3 "Comic Sans MS","Chalkboard SE",cursive;color:#fffaf2}
+#tale .hint{font:700 18px/1.3 system-ui,"Segoe UI",sans-serif;color:#ffd27a;margin-top:6px}
+@media (prefers-reduced-motion:no-preference){#tale .art{animation:taleBob 1.8s ease-in-out infinite}}
+@keyframes taleBob{50%{transform:translateY(-8px) scale(1.05)}}
+@media (prefers-reduced-motion:reduce){#tale,#tale .art{animation:none!important;transition:none!important;transform:none!important}}`;
   document.head.appendChild(css);
   const ps = document.createElement('div'); ps.id = 'ps'; document.body.appendChild(ps);
   const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstChild; }, sl = ms => new Promise(r => setTimeout(r, ms));
@@ -203,9 +220,7 @@ body.modal-open #dpad,body.modal-open #stick,body.transitioning #dpad,body.trans
     if (s) s.hidden = true;
     try { syncModal(); } catch (e) {}
   }
-  function fxUnlock() {
-    document.body.classList.remove('transitioning');
-    window.__JUICE__.transition = '';
+  function revealPad() {
     const d = document.getElementById('dpad'), s = document.getElementById('stick');
     let open = false; try { open = overlayOpen(); } catch (e) {}
     if (!open && document.body.classList.contains('touch')) {
@@ -214,16 +229,72 @@ body.modal-open #dpad,body.modal-open #stick,body.transitioning #dpad,body.trans
     }
     try { syncModal(); } catch (e) {}
   }
+  function fxUnlock() {
+    document.body.classList.remove('transitioning');
+    window.__JUICE__.transition = '';
+    revealPad();
+  }
   const hud = el('<div id="hud3"><span id="h3s" class="pill"></span><span id="h3c" role="status" aria-live="polite"></span></div>'); document.body.appendChild(hud);
-  hud.querySelector('#h3s').textContent = `${T('Scene', 'Escena')} ${P.level}/${P.total}${P.scene ? ' · ' + tr(P.scene) : ''}`;
-  document.body.appendChild(el(`<a id="jt" href="${addQ('?judge=1')}">${T('judge mode', 'modo jurado')}</a>`));
+  hud.querySelector('#h3s').textContent = `${T('Scene', 'Escena')} ${P.level}/${P.total}`;
   document.body.appendChild(el(`<a id="home" href="${addQ('gallery.html')}">🏠 ${T('Home', 'Inicio')}</a>`));
   const screen = (h, bg) => { const s = el(`<div class="scr off">${bg ? `<div class="bg" style="background-image:url('${bg}')"></div>` : ''}${h}</div>`); ps.appendChild(s); requestAnimationFrame(() => s.classList.remove('off')); return s; };
   const close = async s => { s.classList.add('off'); await sl(350); s.remove(); };
   const G = () => window.__GAME__;
-  const STORY = { 1: ['🦋 Three kids got lost in the playground. Collect them and find the magic door!', '🦋 Tres nenes se perdieron en el patio. ¡Juntalos y buscá la puerta mágica!'], 2: ["☁️ The clouds won't let you through. Fly carefully between them!", '☁️ Las nubes no dejan pasar. ¡Volá con cuidado entre ellas!'], 3: ['☀️ Last flight! Take the kids home, to the sun.', '☀️ ¡Último vuelo! Llevá a los nenes a casa, con el sol.'] };
-  const STORYOF = n => (/playground_01/.test(B.sample || '') || !B.scene_intro) ? T(STORY[n][0], STORY[n][1]) : '✨ ' + tr(B.scene_intro);
-  const story = (t, ms = 4500) => { const b = el(`<div id="tale" role="status"><span class="kicker">${T('Goal', 'Meta')}</span><div class="line">${t}</div><div class="hint">${T('Tap to continue', 'Tocá para seguir')}</div></div>`); document.body.appendChild(b); const close = () => { if (b.dataset.bye) return; b.dataset.bye = '1'; b.classList.remove('in'); b.classList.add('out'); setTimeout(() => b.remove(), REDUCED_MOTION ? 0 : 280); }; requestAnimationFrame(() => b.classList.add('in')); b.addEventListener('pointerdown', ev => { ev.preventDefault(); close(); }); setTimeout(close, ms); };
+  const STORY = {
+    1: ['🦋', 'Three kids are lost in the playground, so collect them and open the magic door!', '¡Tres nenes se perdieron en el patio, así que juntalos y abrí la puerta mágica!'],
+    2: ['☁️', 'The clouds block the path, so fly carefully between them!', '¡Las nubes tapan el camino, así que volá con cuidado entre ellas!'],
+    3: ['☀️', 'This is the last flight, so carry the kids home to the sun!', '¡Este es el último vuelo, así que llevá a los nenes hasta el sol!']
+  };
+  function pickArt(s) {
+    const rows = [[/mariposa|butterfly/i, '🦋'], [/nube|cloud/i, '☁️'], [/sol\b|sun\b/i, '☀️'], [/fantasma|ghost/i, '👻'], [/monstruo|monster/i, '👾'], [/estrella|star/i, '⭐'], [/hueso|bone/i, '🦴'], [/fuego|fire/i, '🔥'], [/agua|water/i, '💧'], [/castillo|castle/i, '🏰'], [/casa|house\b|home\b/i, '🏠'], [/gatito|kitten|gato|\bcat\b/i, '🐱'], [/perro|\bdog\b/i, '🐶'], [/drag/i, '🐉'], [/nave|\bship\b|rocket/i, '🚀'], [/piedra|rock/i, '🪨']];
+    for (const [re, em] of rows) if (re.test(s)) return em;
+    return '✨';
+  }
+  function oneLine(s) {
+    s = String(s || '').replace(/\s+/g, ' ').trim().replace(/^[¡!?\s]+/, '');
+    s = s.replace(/^(?:[A-Za-z]{2,14})!\s+/, '');
+    const parts = s.split(/(?<=[.!])\s+/).map(x => x.trim()).filter(Boolean);
+    let line = parts[0] || s;
+    if (line.replace(/[.!]+$/, '').length < 28 && parts[1]) {
+      const b = parts[1].replace(/[.!]+$/, '');
+      const rest = /^I\b/.test(b) ? b : (b.charAt(0).toLowerCase() + b.slice(1));
+      line = line.replace(/[.!]+$/, '') + ', ' + rest;
+    }
+    if (line.length > 140) line = line.slice(0, 136).replace(/\s+\S*$/, '') + '…';
+    if (line && !/[.!?…]$/.test(line)) line += '!';
+    return line;
+  }
+  function storyParts(n) {
+    if (/playground_01/.test(B.sample || '') || !B.scene_intro) {
+      const row = STORY[n] || STORY[1];
+      return { art: row[0], line: T(row[1], row[2]) };
+    }
+    const src = String(B.scene_intro || '');
+    const shown = ES ? src : tr(src);
+    let line = oneLine(shown);
+    if (!ES && /[áéíóúñÁÉÍÓÚÑ¿¡]/.test(line)) line = oneLine(tr(P.scene || '')) || 'A new adventure is waiting for you!';
+    if (!ES && /[áéíóúñÁÉÍÓÚÑ¿¡]/.test(line)) line = 'A new adventure is waiting for you!';
+    return { art: pickArt(src + ' ' + shown + ' ' + (P.scene || '')), line: line };
+  }
+  function story(parts) {
+    clearTimeout(window.__TALE_TIMER__);
+    const old = document.getElementById('tale'); if (old) old.remove();
+    const art = parts.art || '✨', line = parts.line || '';
+    const b = el(`<div id="tale" role="dialog" aria-label="${T('Story', 'Historia')}"><div class="card"><div class="kicker">${T('Story', 'Historia')}</div><div class="art" aria-hidden="true">${art}</div><p class="line">${esc(line)}</p><div class="hint">${T('Tap anywhere to skip', 'Tocá en cualquier lado para saltar')}</div></div></div>`);
+    window.__TALE__ = { art: art, line: line, ms: 4000, at: Date.now(), closed: '', between: (P.level || 1) > 1, scene: P.level || 1 };
+    const close = (how) => {
+      if (!b.isConnected || b.dataset.bye) return;
+      b.dataset.bye = '1';
+      clearTimeout(window.__TALE_TIMER__);
+      window.__TALE__.closed = how;
+      b.remove();
+      try { revealPad(); } catch (e) {}
+    };
+    b.addEventListener('pointerdown', ev => { ev.preventDefault(); ev.stopPropagation(); close('tap'); });
+    window.__TALE_TIMER__ = setTimeout(() => close('auto'), 4000);
+    document.body.appendChild(b);
+    try { syncModal(); } catch (e) {}
+  }
 
   // procedural SFX (WebAudio, no assets) + mute toggle
   let AC = null, MUTED = q.get('mute') === '1' || localStorage.getItem('dj_mute') === '1';
@@ -234,7 +305,7 @@ body.modal-open #dpad,body.modal-open #stick,body.transitioning #dpad,body.trans
   window.__SFX__ = SFX;
   const mb = el(`<button id="mu" aria-label="${T('Sound', 'Sonido')}">${MUTED ? '🔇' : '🔊'}</button>`); document.body.appendChild(mb);
   mb.onclick = () => { MUTED = !MUTED; localStorage.setItem('dj_mute', MUTED ? '1' : '0'); mb.textContent = MUTED ? '🔇' : '🔊'; SFX.tap(); };
-  const pz = el(`<button id="pz" aria-label="${T('Pause', 'Pausa')}">⏸</button>`), pzo = el(`<div id="pzo">⏸ ${T('Paused', 'Pausa')}<div class="hint">${T('Left stick, arrows, swipe, or tap · collect everything · get to the door!', 'Palanca, flechas, deslizá o tocá · juntá todo · ¡a la puerta!')}</div><button>▶ ${T('Keep playing', 'Seguir jugando')}</button><div class="row2"><button class="sm">↺ ${T('Start over', 'Empezar de nuevo')}</button><button class="sm" id="pzm"></button></div><a class="home" href="${addQ('gallery.html')}">🏠 ${T('Home', 'Inicio')}</a></div>`); document.body.append(pz, pzo);
+  const pz = el(`<button id="pz" aria-label="${T('Pause', 'Pausa')}">⏸</button>`), pzo = el(`<div id="pzo"><div class="title">⏸ ${T('Paused', 'Pausa')}</div><div class="hint">${T('Tap the arrows or swipe to move. Pick everything up, then step into the door.', 'Tocá las flechas o deslizá para moverte. Juntá todo y entrá a la puerta.')}</div><button>▶ ${T('Keep playing', 'Seguir jugando')}</button><div class="row2"><button class="sm">↺ ${T('Start over', 'Empezar de nuevo')}</button><button class="sm" id="pzm"></button></div><a class="home" href="${addQ('gallery.html')}">🏠 ${T('Home', 'Inicio')}</a><a id="jt" href="${addQ('?judge=1')}">${T('Judge view', 'Vista jurado')}</a></div>`); document.body.append(pz, pzo);
   pz.onclick = () => { pzmT && pzmT(); pzo.classList.add('on'); window.__PAUSED__ = true; }; const [r1, r2] = pzo.querySelectorAll('button'), pzm = pzo.querySelector('#pzm'); const pzmT = () => pzm.textContent = MUTED ? T('🔇 Sound off', '🔇 Sonido apagado') : T('🔊 Sound on', '🔊 Sonido prendido'); pzmT(); pzm.onclick = () => { mb.onclick(); pzmT(); }; r1.onclick = () => { pzo.classList.remove('on'); window.__PAUSED__ = false; }; r2.onclick = () => { G() && G().reset(); r1.onclick(); };
   addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'p') pzo.classList.contains('on') ? r1.onclick() : pz.onclick(); });
   // HUD + win/lose flow
@@ -276,7 +347,7 @@ body.modal-open #dpad,body.modal-open #stick,body.transitioning #dpad,body.trans
   }
   window.__JUICE__.playConfetti = confetti;
   // touch: D-pad (gaps included), left-thumb soft analog stick, swipe + tap-to-move. No screen dead zones.
-  const overlayOpen = () => !!(document.body.classList.contains('transitioning') || document.getElementById('onb') || document.getElementById('demoNote') || (document.getElementById('wipe') && document.getElementById('wipe').classList.contains('on')) || (document.getElementById('pzo') && document.getElementById('pzo').classList.contains('on')) || (document.getElementById('gate') && document.getElementById('gate').classList.contains('on')) || document.querySelector('#ps .scr:not(.off)'));
+  const overlayOpen = () => !!(document.body.classList.contains('transitioning') || document.getElementById('onb') || document.getElementById('tale') || document.getElementById('demoNote') || (document.getElementById('wipe') && document.getElementById('wipe').classList.contains('on')) || (document.getElementById('pzo') && document.getElementById('pzo').classList.contains('on')) || (document.getElementById('gate') && document.getElementById('gate').classList.contains('on')) || document.querySelector('#ps .scr:not(.off)'));
   const busy = () => !!(window.__PAUSED__ || overlayOpen());
   function step(dx, dy) { if (busy() || !(dx || dy)) return; const g = G(); if (!g || !g.move) return; let S; try { S = g.state(); } catch (e) { return; } if (!S || S.status !== 'playing') return; g.move(dx, dy); }
   function toward(x, y) { const dx = x - innerWidth / 2, dy = y - innerHeight / 2; if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return [0, -1]; return Math.abs(dx) >= Math.abs(dy) ? [Math.sign(dx) || 0, 0] : [0, Math.sign(dy) || 0]; }
@@ -336,17 +407,18 @@ body.modal-open #dpad,body.modal-open #stick,body.transitioning #dpad,body.trans
   });
   addEventListener('pointerup', e => { endJoy(e); endRec(e); });
   addEventListener('pointercancel', e => { endJoy(e); endRec(e); });
-  addEventListener('touchmove', e => { if (!document.body.classList.contains('play')) return; if (e.target.closest && e.target.closest('#ps .scr, #pzo, #gate, #onb, #demoNote, #home')) return; e.preventDefault(); }, { passive: false });
+  addEventListener('touchmove', e => { if (!document.body.classList.contains('play')) return; if (e.target.closest && e.target.closest('#ps .scr, #pzo, #gate, #onb, #tale, #demoNote, #home')) return; e.preventDefault(); }, { passive: false });
   try { const mo = new MutationObserver(() => syncModal()); mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] }); } catch (e) {}
   syncModal();
   addEventListener('gesturestart', e => { try { e.preventDefault(); } catch (err) {} });
   addEventListener('dblclick', e => { if (document.body.classList.contains('play')) e.preventDefault(); });
   addEventListener('keydown', e => { if (document.body.classList.contains('play') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault(); });
-  function showOnboard() { if (document.getElementById('onb')) return; try { if (localStorage.getItem('dj_onboard_v1') === '1') return; } catch (e) {} const b = el(`<div id="onb" role="dialog" aria-label="${T('How to play', 'Cómo jugar')}"><div class="card"><div>👆 ${T('Drag the left stick, tap the arrows, or swipe', 'Arrastrá la palanca, tocá las flechas o deslizá')}</div><div>⭐ ${T('Collect all the stars/kids', 'Juntá todas las estrellas o los nenes')}</div><div>🚪 ${T('Then walk into the glowing door', 'Después entrá a la puerta brillante')}</div><div class="go">${T('Tap to start', 'Tocá para empezar')}</div></div></div>`); const dismiss = ev => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } try { localStorage.setItem('dj_onboard_v1', '1'); } catch (e) {} b.remove(); syncModal(); }; b.addEventListener('pointerdown', dismiss); document.body.appendChild(b); syncModal(); }
-  function showSavedDemo() { if (document.getElementById('demoNote')) return; const src = B.photo_src || (B.drawing_b64 ? 'data:image/png;base64,' + B.drawing_b64 : ''); const quote = B.transcript ? esc(tr(B.transcript)) : ''; const b = el(`<div id="demoNote" role="dialog" aria-label="${T('Saved demo', 'Demo guardada')}"><div class="card"><div class="line">${T('Playing a saved demo world (drawing + voice made earlier)', 'Jugando un mundo demo guardado (dibujo y voz hechos antes)')}</div>${src ? `<img alt="${T('Saved drawing', 'Dibujo guardado')}" src="${src}">` : ''}${quote ? `<div class="tr">“${quote}”</div>` : ''}<button type="button" class="big">${T('▶ Play', '▶ Jugar')}</button></div></div>`); let gone = false; const dismiss = ev => { if (gone) return; gone = true; if (ev) { ev.preventDefault(); ev.stopPropagation(); } b.remove(); try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch (e) {} story(STORYOF(P.level || 1)); showOnboard(); syncModal(); }; b.addEventListener('pointerdown', dismiss); document.body.appendChild(b); syncModal(); }
+  function showOnboard(done) { const finish = () => { if (done) done(); }; if (document.getElementById('onb')) { finish(); return; } try { if (localStorage.getItem('dj_onboard_v2') === '1') { finish(); return; } } catch (e) { finish(); return; } const b = el(`<div id="onb" role="dialog" aria-label="${T('How to play', 'Cómo jugar')}"><div class="card"><div class="kicker">${T('First time here', 'Primera vez')}</div><div>👆 ${T('Swipe, or tap the arrows, to move', 'Deslizá o tocá las flechas para moverte')}</div><div>⭐ ${T('Pick up every friend', 'Juntá a todos los amigos')}</div><div>🚪 ${T('Then walk into the glowing door', 'Después entrá a la puerta brillante')}</div><div class="go">${T('Tap anywhere to start', 'Tocá en cualquier lado para empezar')}</div></div></div>`); const dismiss = ev => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } if (!b.isConnected) return; try { localStorage.setItem('dj_onboard_v2', '1'); } catch (e) {} b.remove(); finish(); try { syncModal(); } catch (e2) {} }; b.addEventListener('pointerdown', dismiss); document.body.appendChild(b); try { syncModal(); } catch (e) {} }
+  function beginPlay() { showOnboard(() => story(storyParts(P.level || 1))); }
+  function showSavedDemo() { if (document.getElementById('demoNote')) return; const src = B.photo_src || (B.drawing_b64 ? 'data:image/png;base64,' + B.drawing_b64 : ''); const quote = B.transcript ? esc(tr(B.transcript)) : ''; const b = el(`<div id="demoNote" role="dialog" aria-label="${T('Saved demo', 'Demo guardada')}"><div class="card"><div class="line">${T('Playing a saved demo world (drawing + voice made earlier)', 'Jugando un mundo demo guardado (dibujo y voz hechos antes)')}</div>${src ? `<img alt="${T('Saved drawing', 'Dibujo guardado')}" src="${src}">` : ''}${quote ? `<div class="tr">“${quote}”</div>` : ''}<button type="button" class="big">${T('▶ Play', '▶ Jugar')}</button></div></div>`); let gone = false; const dismiss = ev => { if (gone) return; gone = true; if (ev) { ev.preventDefault(); ev.stopPropagation(); } b.remove(); try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch (e) {} beginPlay(); syncModal(); }; b.addEventListener('pointerdown', dismiss); document.body.appendChild(b); syncModal(); }
   function honestNote() { const offline = typeof navigator !== 'undefined' && navigator.onLine === false; return offline ? T('You are offline. No AI check ran. This page did not call a Meta API.', 'Estás sin conexión. No se hizo ninguna revisión con IA. Esta página no llamó a una API de Meta.') : T('No AI check ran. This page did not call a Meta API.', 'No se hizo ninguna revisión con IA. Esta página no llamó a una API de Meta.'); }
   // later scenes already skip the intro
-  if (q.get('go') === '1' || P.level > 1) { fxLock(P.level % 2 === 0 ? 'wipe' : 'iris'); wipe.textContent = `${T('Scene', 'Escena')} ${P.level}${P.scene ? ': ' + tr(P.scene) : ''}`; wipe.style.transition = 'none'; wipe.classList.add('on'); requestAnimationFrame(() => setTimeout(() => { wipe.style.transition = ''; wipe.classList.remove('on'); story(STORYOF(P.level)); showOnboard(); setTimeout(fxUnlock, REDUCED_MOTION ? 0 : 520); }, REDUCED_MOTION ? 40 : 700)); return; }
+  if (q.get('go') === '1' || P.level > 1) { fxLock(P.level % 2 === 0 ? 'wipe' : 'iris'); wipe.textContent = `${T('Scene', 'Escena')} ${P.level}${P.scene ? ': ' + tr(P.scene) : ''}`; wipe.style.transition = 'none'; wipe.classList.add('on'); requestAnimationFrame(() => setTimeout(() => { wipe.style.transition = ''; wipe.classList.remove('on'); beginPlay(); setTimeout(fxUnlock, REDUCED_MOTION ? 0 : 520); }, REDUCED_MOTION ? 40 : 700)); return; }
   // Gallery Play: saved demo, no upload, no recording, no fake check.
   if (q.get('create') !== '1') { showSavedDemo(); return; }
   // Optional local create. Nothing here is sent to an AI or a Meta API.
@@ -359,6 +431,6 @@ body.modal-open #dpad,body.modal-open #stick,body.transitioning #dpad,body.trans
     ph.onchange = () => { const f = ph.files && ph.files[0]; photoOk = false; go.disabled = true; if (!f || !f.size) { err.textContent = T('That file is empty. Pick a photo of the drawing.', 'Ese archivo está vacío. Elegí una foto del dibujo.'); return; } if (!f.type || f.type.indexOf('image/') !== 0) { err.textContent = T('That is not an image. Pick a photo.', 'Eso no es una imagen. Elegí una foto.'); ph.value = ''; return; } photoOk = true; photo = URL.createObjectURL(f); const L = ph.parentNode; L.innerHTML = `<img src="${photo}" alt=""><span>${T('Photo ready', 'Foto lista')}</span>`; err.textContent = ''; go.disabled = false; };
     au.onchange = () => { const f = au.files && au.files[0]; if (!f || !f.size) { err.textContent = T('That audio file is empty.', 'Ese audio está vacío.'); return; } if ((f.type || '').indexOf('video/') === 0) { err.textContent = T('Video is not allowed. Voice has to be audio only.', 'El video no está permitido. La voz tiene que ser solo audio.'); au.value = ''; return; } if (f.type && f.type.indexOf('audio/') !== 0) { err.textContent = T('That is not an audio file.', 'Eso no es un archivo de audio.'); au.value = ''; return; } const span = au.parentNode.querySelector('span'); if (span) span.textContent = '🎵 ' + f.name.slice(0, 22); err.textContent = T('Audio file ready. It stays on this phone. ', 'Archivo de audio listo. Se queda en este teléfono. ') + honestNote(); };
     s.querySelector('#mic').onclick = async () => { err.textContent = ''; if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { err.textContent = T('This browser cannot record audio. Pick an audio file instead. ', 'Este navegador no puede grabar audio. Elegí un archivo de audio. ') + honestNote(); return; } let stream = null; try { stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false }); } catch (e) { err.textContent = T('Microphone was blocked. Pick an audio file instead. ', 'El micrófono está bloqueado. Elegí un archivo de audio. ') + honestNote(); return; } const videoTracks = stream.getVideoTracks ? stream.getVideoTracks() : []; videoTracks.forEach(t => t.stop()); if (videoTracks.some(t => t.readyState === 'live')) { stream.getTracks().forEach(t => t.stop()); err.textContent = T('The camera turned on, so recording was stopped. Voice has to be audio only. ', 'Se prendió la cámara, así que se detuvo la grabación. La voz tiene que ser solo audio. ') + honestNote(); return; } const audioTracks = stream.getAudioTracks ? stream.getAudioTracks() : []; if (!audioTracks.length) { stream.getTracks().forEach(t => t.stop()); err.textContent = T('No microphone track. Nothing was recorded. ', 'No hay pista de micrófono. No se grabó nada. ') + honestNote(); return; } let chunks = []; const mime = (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm')) ? 'audio/webm' : ''; let rec = null; try { rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream); } catch (e) { rec = null; } if (!rec) { stream.getTracks().forEach(t => t.stop()); err.textContent = T('Audio-only microphone opened, then closed. Nothing was uploaded. ', 'Se abrió el micrófono solo de audio y se cerró. No se subió nada. ') + honestNote(); return; } rec.ondataavailable = ev => { if (ev.data && ev.data.size) chunks.push(ev.data); }; rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); const blob = new Blob(chunks, { type: rec.mimeType || 'audio/webm' }); if (!blob.size || (blob.type || '').indexOf('video/') === 0) { err.textContent = T('That recording was empty or was not audio. ', 'Esa grabación estaba vacía o no era audio. ') + honestNote(); return; } const url = URL.createObjectURL(blob); const old = s.querySelector('#clip'); if (old) old.remove(); const clip = document.createElement('audio'); clip.id = 'clip'; clip.controls = true; clip.src = url; s.appendChild(clip); err.textContent = T('Voice saved on this phone (audio only, no video). Nothing was uploaded. ', 'Voz guardada en este teléfono (solo audio, sin video). No se subió nada. ') + honestNote(); }; try { rec.start(); } catch (e) { stream.getTracks().forEach(t => t.stop()); err.textContent = T('Could not start the audio recording. ', 'No se pudo empezar la grabación de audio. ') + honestNote(); return; } s.querySelector('#mic').textContent = T('🎙️ Listening…', '🎙️ Escuchando…'); setTimeout(() => { try { if (rec.state === 'recording') rec.stop(); } catch (e) {} }, 1600); };
-    go.onclick = async () => { if (!photoOk) { err.textContent = T('Add a real photo of the drawing first. ', 'Primero sumá una foto de verdad del dibujo. ') + honestNote(); return; } await close(s); const s2 = screen(`<div class="msg">${esc(honestNote())}</div><div class="msg" style="font-size:18px;opacity:.9">${T('Your photo stays on this phone. The world you play is the saved demo.', 'Tu foto se queda en este teléfono. El mundo que jugás es el demo guardado.')}</div><div class="stage"><img src="${photo}" alt=""></div><button class="big">${T('▶ Play', '▶ Jugar')}</button>`); await new Promise(r => s2.querySelector('button').onclick = r); await close(s2); story(STORYOF(1)); showOnboard(); };
+    go.onclick = async () => { if (!photoOk) { err.textContent = T('Add a real photo of the drawing first. ', 'Primero sumá una foto de verdad del dibujo. ') + honestNote(); return; } await close(s); const s2 = screen(`<div class="msg">${esc(honestNote())}</div><div class="msg" style="font-size:18px;opacity:.9">${T('Your photo stays on this phone. The world you play is the saved demo.', 'Tu foto se queda en este teléfono. El mundo que jugás es el demo guardado.')}</div><div class="stage"><img src="${photo}" alt=""></div><button class="big">${T('▶ Play', '▶ Jugar')}</button>`); await new Promise(r => s2.querySelector('button').onclick = r); await close(s2); beginPlay(); };
   })();
 })();
