@@ -20,6 +20,15 @@ body{background:#1b1b22;color:#eee;font-family:system-ui,sans-serif;margin:0;dis
 #ov small{font-size:13px;margin:0;opacity:.9}
 
 canvas{box-shadow:0 10px 30px #000a,0 0 0 6px #fdf6e3,0 0 0 8px #c8b88a}
+body{overflow-x:clip}
+@media (max-width:980px){
+body{flex-wrap:wrap;padding-top:56px}
+#main{width:min(100%,640px);max-width:100%}
+#wrap{max-width:100%}
+#wrap canvas{max-width:100%;height:auto}
+#tl{width:min(100%,640px);max-height:40vh}
+}
+@media (max-height:500px){#tl{max-height:28vh}body{padding:48px 8px 8px}}
 </style></head>
 <body><a href="gallery.html" style="position:fixed;top:10px;right:12px;z-index:9;background:linear-gradient(90deg,#ef6c00,#fbc02d);color:#fff;text-decoration:none;padding:8px 16px;border-radius:20px;font-weight:800"><span data-es="🎨 Jugar demos · Para jueces →">🎨 Play demos · For judges →</span></a><div id="main"><h3 id="t">Playable Drawing</h3>
 <div id="hud"><span><span data-es="Intento agente:">Agent attempt:</span> <b id="att">1</b></span><span><span data-es="Pasos:">Steps:</span> <b id="steps">0</b></span><span><span data-es="Estado:">Status:</span> <b id="st">playing</b></span></div>

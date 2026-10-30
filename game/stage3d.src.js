@@ -12,6 +12,8 @@ function boot() {
   if (!G || !G.ready || !c2) return setTimeout(boot, 60);
   // wait for the inline bundle (sets __BUNDLE__/__PLATE__/__ART__ after this script) so play mode + plate ground are never skipped by a race
   if (!window.__BUNDLE__ && (boot.n = (boot.n || 0) + 1) < 40) return setTimeout(boot, 50);
+  // player_shell.js (after this file) sets __tr. A timer can run in that gap and stamp Spanish name cards.
+  if (typeof window.__tr !== 'function' && (boot.trN = (boot.trN || 0) + 1) < 40) return setTimeout(boot, 50);
   const COARSE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
   const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
   const STILL = new URLSearchParams(location.search).get('still') === '1' || REDUCED;
@@ -115,6 +117,23 @@ function boot() {
     for (let i = 0; i < 8; i++) { const a = -Math.PI / 2 + i * Math.PI / 4, r = (i % 2 ? .2 : .46) * w, px = Math.cos(a) * r, py = Math.sin(a) * r; i ? x.lineTo(px, py) : x.moveTo(px, py); }
     x.closePath(); x.fill(); x.restore();
   }, 64, 64);
+  // Optional sparkle star (playground scene 1). Display only: it never blocks a cell.
+  let sparkA = null;
+  const SPK = (window.__SPARK__ && window.__SPARK__.cell && Number.isFinite(+window.__SPARK__.cell.x) && Number.isFinite(+window.__SPARK__.cell.y)) ? window.__SPARK__.cell : null;
+  if (SPK) {
+    sparkA = new THREE.Group();
+    const star = new THREE.Sprite(new THREE.SpriteMaterial({ map: starT, color: '#ffe56a', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false }));
+    star.scale.set(1.25, 1.25, 1); star.position.y = 1.15; star.renderOrder = 6;
+    const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowT, color: '#fff4c0', transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false }));
+    halo.scale.set(2.4, 2.4, 1); halo.position.y = 1.15; halo.renderOrder = 5;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(.26, .48, 5), new THREE.MeshBasicMaterial({ color: '#ffe27a', side: THREE.DoubleSide, transparent: true, opacity: .95, depthWrite: false, toneMapped: false }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = .06;
+    const light = new THREE.PointLight('#ffd56a', STILL ? .8 : 1.6, 5, 2); light.position.y = 1.3;
+    sparkA.add(halo, star, ring, light);
+    sparkA.position.set(X(+SPK.x), 0, Z(+SPK.y));
+    sparkA.userData = { star, halo, ring, light, bye: null, popped: false };
+    scene.add(sparkA);
+  }
   const pMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: starT, color: '#ffffff', transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false, fog: false, side: THREE.DoubleSide }), NP);
   pMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage); pMesh.frustumCulled = false; pMesh.count = NP; pMesh.renderOrder = 4; scene.add(pMesh);
   const pDummy = new THREE.Object3D(), pColor = new THREE.Color();
@@ -200,7 +219,7 @@ function boot() {
   const juiceLight = new THREE.PointLight('#ffd54f', 0, 7.5, 2); juiceLight.position.set(0, -4, 0); scene.add(juiceLight);
   const hint = new THREE.Mesh(new THREE.ConeGeometry(.35, .7, 4), new THREE.MeshStandardMaterial({ color: '#ffe27a', emissive: '#ffb300', emissiveIntensity: 1.2 })); hint.rotation.x = Math.PI; hint.visible = false; scene.add(hint);
   const hintG = new THREE.Mesh(new THREE.RingGeometry(.55, .8, 32), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending })); hintG.rotation.x = -Math.PI / 2; hintG.visible = false; scene.add(hintG);
-  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED, dust: 0, dustLive: 0, dustTravel: 0, heartbeat: 0, heartbeatMax: 0, doorOpen: false, doorScale: 0, doorScaleMin: null, doorScaleMax: 0, confetti: 0 };
+  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED, dust: 0, dustLive: 0, dustTravel: 0, heartbeat: 0, heartbeatMax: 0, doorOpen: false, doorScale: 0, doorScaleMin: null, doorScaleMax: 0, confetti: 0, spark: sparkA ? 1 : 0, sparkOn: sparkA ? 1 : 0, sparkSpin: 0 };
   // Composer resets the draw-call counter on every pass, so keep the main scene pass.
   let sceneCalls = 0; const renderScene = gl.render.bind(gl);
   gl.render = (s, c) => { renderScene(s, c); if (s === scene) sceneCalls = gl.info.render.calls; };
@@ -224,6 +243,19 @@ function boot() {
     player.userData.q.material.emissiveIntensity = .08 + heroPulse * 2.2; player.userData.q.material.emissive.set(heroPulse > .04 ? '#ffe7a0' : '#ffffff'); heroPulse *= .9; juiceLight.intensity *= .88; if (juiceLight.intensity < .05) juiceLight.intensity = 0;
     if (S.status === 'won') { player.position.y += Math.min(3, (t - winT) * 1.2); player.rotation.y = (t - winT) * 4; }
     if (S.status === 'lost') player.userData.q.rotation.z = Math.min(1.5, player.userData.q.rotation.z + .2);
+    if (sparkA) {
+      const got = !!(window.__SPARK__ && window.__SPARK__.got), ud = sparkA.userData;
+      if (!got) { ud.bye = null; ud.popped = false; }
+      else if (ud.bye == null) { ud.bye = now; if (!ud.popped) { ud.popped = true; if (!STILL) burst(sparkA.position.x, sparkA.position.z, 36, ['#fff6c2', '#ffd54f', '#fff'], 1.3, 1.05, .65); } }
+      const age = ud.bye == null ? -1 : now - ud.bye, popping = !STILL && age >= 0 && age < .32;
+      sparkA.visible = !got || popping;
+      const bob = STILL ? 0 : Math.sin(t * 3) * .18, pulse = STILL ? 1 : (1 + Math.sin(t * 4.2) * .1), popK = popping ? (1 + Math.sin((age / .32) * Math.PI) * .45) : 1;
+      ud.star.position.y = 1.15 + bob; ud.halo.position.y = 1.15 + bob;
+      ud.star.scale.set(1.25 * pulse * popK, 1.25 * pulse * popK, 1);
+      ud.halo.material.opacity = (STILL ? .65 : (.5 + Math.sin(t * 5) * .22)) * (popping ? Math.max(0, 1 - age / .32) : 1);
+      ud.ring.rotation.z = STILL ? 0 : t * 1.1;
+      ud.light.intensity = STILL ? .8 : (1.3 + Math.sin(t * 5) * .5);
+    }
     goals.forEach((g, i) => { const got = S.collected.includes(g.userData.id); if (!got) g.userData.bye = null; else if (g.userData.bye == null) g.userData.bye = now; const age = g.userData.bye == null ? -1 : now - g.userData.bye; const popping = !STILL && age >= 0 && age < .38; g.visible = !got || popping; if (popping) { const k = age / .38; g.scale.setScalar(1 + Math.sin(k * Math.PI) * .55); g.userData.q.material.emissive.set('#ffe27a'); g.userData.q.material.emissiveIntensity = .3 + (1 - k) * 2.4; g.userData.halo.material.opacity = 1; g.userData.q.position.y = g.userData.size / 2 + .25; } else if (!got) { if (g.scale.x !== 1) g.scale.setScalar(1); g.userData.q.material.emissiveIntensity = .08; g.userData.q.material.emissive.set('#ffffff'); g.userData.q.position.y = g.userData.size / 2 + .15 + Math.sin(t * 2 + i) * .12; g.userData.q.rotation.y = Math.sin(t * 1.3 + i) * .5; g.userData.halo.material.opacity = .6 + Math.sin(t * 3 + i) * .3; } });
     npcs.forEach((n, i) => n.userData.q.position.y = n.userData.size / 2 + Math.abs(Math.sin(t * 3 + i)) * .1);
     const live = new Set(); S.foes.forEach((f, i) => { live.add(f.id); const a = foes[f.id] || (foes[f.id] = (() => { const z = actor('enemy', f.label, 1.9, f.id); z.position.set(X(f.x), 0, Z(f.y)); return z; })());
@@ -264,6 +296,7 @@ function boot() {
     const fx = window.__STAGE3D__; fx.frames++; fx.bloom = +bloom.strength.toFixed(3); fx.shake = STILL ? 0 : +shake.toFixed(3); fx.doorLight = doorA && doorA.userData.light ? +doorA.userData.light.intensity.toFixed(2) : 0; fx.alive = alive; fx.spawned = spawned; fx.calls = sceneCalls;
     const hbv = doorA && doorA.userData ? (doorA.userData.hb || 0) : 0, scv = doorA && doorA.userData && doorA.userData.sc ? doorA.userData.sc : 0;
     fx.heartbeat = +hbv.toFixed(3); fx.doorOpen = !!(S && S.doorOpen); fx.doorScale = +scv.toFixed(4); fx.reduced = REDUCED;
+    fx.spark = sparkA ? 1 : 0; fx.sparkOn = sparkA && sparkA.visible ? 1 : 0; fx.sparkSpin = (sparkA && !STILL && !(window.__SPARK__ && window.__SPARK__.got)) ? 1 : 0;
     if (fx.doorOpen && !STILL && scv) { fx.heartbeatMax = Math.max(fx.heartbeatMax || 0, hbv); fx.doorScaleMin = fx.doorScaleMin == null ? scv : Math.min(fx.doorScaleMin, scv); fx.doorScaleMax = Math.max(fx.doorScaleMax || 0, scv); }
     fx.confetti = WT && WT.userData ? (WT.userData.count || 0) : (fx.confetti || 0);
   }

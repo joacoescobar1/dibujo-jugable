@@ -2,18 +2,20 @@
 <meta name="theme-color" content="#2a1f4a"><link rel="manifest" href="manifest.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes">
 <title>Playable Drawing · Gallery</title>
 <style>
-body{margin:0;min-height:100vh;box-sizing:border-box;background:radial-gradient(120% 90% at 50% 10%,#2a1f4a,#07050f 70%);color:#fff;font-family:"Comic Sans MS","Chalkboard SE",system-ui,sans-serif;text-align:center;padding:calc(8px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+body{margin:0;min-height:100vh;box-sizing:border-box;background:radial-gradient(120% 90% at 50% 10%,#2a1f4a,#07050f 70%);color:#fff;font-family:"Comic Sans MS","Chalkboard SE",system-ui,sans-serif;text-align:center;padding:calc(8px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));overflow-x:clip}
 h1{margin:12px 0 4px;font-size:clamp(32px,8vw,40px)}p.s{opacity:.8;margin:0 0 24px;padding:0 16px;font-size:clamp(16px,4vw,20px)}
 .g{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:0 0 40px}
 .c{background:#1d1733;border-radius:18px;width:min(300px,92vw);overflow:hidden;box-shadow:0 10px 30px #000a}
 .c img{width:100%;height:220px;object-fit:cover;background:#fffbe8}
-.c h2{margin:12px 0 4px;font-size:22px;padding:0 10px}.c p{margin:2px 14px 8px;font-size:17px;line-height:1.35}.c small{opacity:.7}.c{transition:transform .2s}.c:hover{transform:translateY(-6px) rotate(-1deg)}.soon{opacity:.55;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:420px;border:3px dashed #5a4d8a;background:#140f26}
+.c h2{margin:12px 0 4px;font-size:22px;padding:0 10px;overflow-wrap:anywhere}.c p{margin:2px 14px 8px;font-size:17px;line-height:1.35;overflow-wrap:anywhere}.c small{opacity:.7;overflow-wrap:anywhere}.c{transition:transform .2s}.c:hover{transform:translateY(-6px) rotate(-1deg)}.soon{opacity:.55;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:420px;border:3px dashed #5a4d8a;background:#140f26}
 p.note{opacity:.7;font-size:16px;padding:0 16px}
 .b{display:flex;gap:10px;justify-content:center;padding:14px;flex-wrap:wrap}
 a.btn{background:linear-gradient(90deg,#ef6c00,#fbc02d);color:#fff;text-decoration:none;padding:14px 22px;min-height:56px;min-width:56px;box-sizing:border-box;border-radius:24px;font-weight:800;font-size:20px;display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation}
 a.alt{background:#3a3160;font-size:16px;padding:14px 18px}
 p.note a{display:inline-flex;align-items:center;justify-content:center;min-height:56px;min-width:56px;padding:8px 12px;touch-action:manipulation}
 footer{opacity:.55;font-size:12px;padding:8px 16px 20px}
+p.note,footer,h1,p.s{overflow-wrap:anywhere}
+@media (max-height:500px){h1{font-size:28px;margin:4px 0 2px}p.s{margin:0 0 8px}.c img{height:96px}.g{gap:12px;padding-bottom:12px}.soon{min-height:0}.c h2{font-size:18px;margin:8px 0 2px}.c p{font-size:15px}}
 @media (prefers-reduced-motion:reduce){.c{transition:none}.c:hover{transform:none}}
 </style></head><body>
 <h1 data-es="🎨 Dibujo Jugable">🎨 Playable Drawing</h1><p class="s" data-es="Dibujos de chicos convertidos en juegos. Elegí uno y jugá.">Kids' drawings are ready to play, so pick a card and jump in!</p>

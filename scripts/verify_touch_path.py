@@ -3,6 +3,8 @@
 
 Fails on visible Spanish without ?lang=es, video:true, a VERIFIED claim, or a Home/D-pad that does not work.
 Also checks the story card, scene pill, objective, pause, first-time hint, gallery taglines, and 56px targets.
+Pass 8: playground sparkle star (optional, off the solver path), results screen (stars + time),
+and layout overflow at 390x844 and 844x390.
 """
 import pathlib, re, sys
 from playwright.sync_api import sync_playwright
@@ -427,6 +429,8 @@ COLLECT_JS = r"""() => {
   const G = window.__GAME__;
   G.reset();
   const sp = G.spec;
+  const sparkK = (window.__SPARK__ && window.__SPARK__.cell) ? (window.__SPARK__.cell.x + ',' + window.__SPARK__.cell.y) : '';
+  let hitSpark = false;
   const wall = new Set();
   const block = (x, y, w, h) => { for (let i = 0; i < (w || 1); i++) for (let j = 0; j < (h || 1); j++) wall.add((x + i) + ',' + (y + j)); };
   (sp.walls || []).forEach(w => block(w.x, w.y, w.w, w.h));
@@ -471,13 +475,15 @@ COLLECT_JS = r"""() => {
         return { ok: false, why: 'would step on open door', at: [st.player.x, st.player.y] };
       }
       G.move(m[0], m[1]);
+      const pp = G.state().player;
+      if (sparkK && pp.x + ',' + pp.y === sparkK) hitSpark = true;
     }
     const after = G.state();
     if (after.status !== 'playing') return { ok: false, why: 'after goal', id: g.id, status: after.status, events: (after.events || []).slice(-4) };
   }
   const S = G.state();
   const need = (sp.goals || []).length;
-  return { ok: S.status === 'playing' && S.collected.length >= Math.min(2, need) && (!sp.door || !!S.doorOpen), collected: S.collected.length, need: need, door: !!S.doorOpen, status: S.status, pos: [S.player.x, S.player.y] };
+  return { ok: S.status === 'playing' && S.collected.length >= Math.min(2, need) && (!sp.door || !!S.doorOpen), collected: S.collected.length, need: need, door: !!S.doorOpen, status: S.status, pos: [S.player.x, S.player.y], hitSpark: hitSpark, stars: (window.__RUN__ && window.__RUN__.stars) || 0 };
 }"""
 
 
@@ -611,6 +617,11 @@ def check_reduced(browser, fails):
         dismiss(pg)
         if not pg.evaluate("() => !!window.__STAGE3D__.reduced"):
             fails.append("prefers-reduced-motion did not freeze stage motion")
+        spark = pg.evaluate("() => ({spark: window.__STAGE3D__.spark || 0, on: window.__STAGE3D__.sparkOn || 0, spin: window.__STAGE3D__.sparkSpin || 0})")
+        print("reduced spark", spark, flush=True)
+        if spark.get("spark") != 1 or spark.get("on") != 1 or spark.get("spin") != 0:
+            fails.append("reduced-motion sparkle star still moves or is hidden: %s" % spark)
+        pg.screenshot(path=str(EV / "verify_touch_spark_reduced.png"))
         origin = pos(pg)
         for sel in ("#dpad .r", "#dpad .d", "#dpad .l", "#dpad .u"):
             if not pg.locator("#dpad").is_visible():
@@ -659,6 +670,195 @@ def check_reduced(browser, fails):
     ctx.close()
 
 
+def layout_overflow(pg):
+    return pg.evaluate("""() => {
+      const bad = [];
+      const vw = innerWidth, vh = innerHeight;
+      const root = document.documentElement;
+      if (root.scrollWidth > vw + 2) bad.push('scrollWidth ' + root.scrollWidth);
+      const fixedIds = { home: 1, pz: 1, mu: 1, dpad: 1, hud3: 1, h3c: 1, h3s: 1, h3spark: 1 };
+      for (const el of document.querySelectorAll('#home,#pz,#mu,#dpad,#hud3,#h3c,#h3s,#h3spark,h1,h2')) {
+        if (el.hidden) continue;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width < 2 || r.height < 2) continue;
+        const name = el.id || el.tagName;
+        if (r.left < -1 || r.right > vw + 1) bad.push(name + ' x ' + Math.round(r.left) + '..' + Math.round(r.right));
+        if (fixedIds[el.id] && (r.top < -1 || r.bottom > vh + 1)) bad.push(name + ' y ' + Math.round(r.top) + '..' + Math.round(r.bottom));
+      }
+      return bad;
+    }""")
+
+def check_spark(pg, fails):
+    """Bonus star on playground scene 1: visible, off the blocking grid, score +1, solver path unchanged."""
+    try:
+        pg.wait_for_function("() => window.__STAGE3D__ && window.__STAGE3D__.ok && window.__SPARK__ && window.__SPARK__.cell", timeout=15000)
+    except Exception as ex:
+        fails.append("sparkle star did not mount: " + str(ex)[:140])
+        return
+    info = pg.evaluate("""() => {
+      const s = window.__STAGE3D__ || {}, k = window.__SPARK__ || {}, spec = window.__GAME__.spec, c = k.cell;
+      const hit = (list) => (list || []).some(r => c && c.x >= r.x && c.x < r.x + (r.w || 1) && c.y >= r.y && c.y < r.y + (r.h || 1));
+      const goal = (spec.goals || []).some(g => c && g.x === c.x && g.y === c.y);
+      const door = !!(spec.door && c && spec.door.x === c.x && spec.door.y === c.y);
+      const start = !!(c && spec.player.x === c.x && spec.player.y === c.y);
+      return { spark: s.spark || 0, on: s.sparkOn || 0, spin: s.sparkSpin || 0, cell: c, blocked: !c || hit(spec.walls) || hit(spec.hazards) || goal || door || start, goals: (spec.goals || []).map(g => g.id) };
+    }""")
+    print("spark", info, flush=True)
+    pg.screenshot(path=str(EV / "verify_touch_spark.png"))
+    if not info or info.get("spark") != 1 or info.get("on") != 1:
+        fails.append("playground sparkle star is not visible: %s" % info)
+        return
+    if info.get("blocked"):
+        fails.append("sparkle star blocks or sits on a rule cell: %s" % info)
+        return
+    if info.get("spin") != 1:
+        fails.append("sparkle star should twinkle when motion is allowed: %s" % info)
+    took = pg.evaluate("""() => {
+      const g = window.__GAME__, cell = window.__SPARK__.cell;
+      g.reset();
+      const before = g.state();
+      const col = (before.collected || []).slice();
+      let guard = 0;
+      while (guard++ < 8) {
+        const S = g.state();
+        if (S.status !== 'playing') return { ok: false, why: 'status', status: S.status };
+        if (S.player.x === cell.x && S.player.y === cell.y) break;
+        const dx = Math.sign(cell.x - S.player.x), dy = Math.sign(cell.y - S.player.y);
+        const step = Math.abs(cell.x - S.player.x) >= Math.abs(cell.y - S.player.y) ? [dx || 0, 0] : [0, dy || 0];
+        if (!step[0] && !step[1]) return { ok: false, why: 'stuck', pos: [S.player.x, S.player.y] };
+        g.move(step[0], step[1]);
+      }
+      if (window.__WATCH_SPARK__) window.__WATCH_SPARK__();
+      const S = g.state();
+      const same = S.collected.join(',') === col.join(',');
+      return { ok: !!(window.__SPARK__.got) && (window.__RUN__ && window.__RUN__.stars) === 1 && S.status === 'playing' && same && S.collected.indexOf('spark_patio') < 0, stars: window.__RUN__ && window.__RUN__.stars, got: window.__SPARK__.got, status: S.status, collected: S.collected, pos: [S.player.x, S.player.y], goals: g.spec.goals.length };
+    }""")
+    print("spark took", took, flush=True)
+    pg.screenshot(path=str(EV / "verify_touch_spark_got.png"))
+    if not took or not took.get("ok"):
+        fails.append("picking up the sparkle star changed the rules: %s" % took)
+        return
+    popped = pg.evaluate("() => { const c = document.getElementById('sparkpop'); return c ? c.textContent : ''; }")
+    if popped and ES.search(popped):
+        fails.append("bonus star popup is Spanish on the English path: " + popped)
+    walked = pg.evaluate(COLLECT_JS)
+    print("spark path", walked, flush=True)
+    if not walked or not walked.get("ok") or not walked.get("door"):
+        fails.append("solver walk failed after the bonus star: %s" % walked)
+    elif walked.get("hitSpark"):
+        fails.append("solver path stepped on the bonus star: %s" % walked)
+    elif walked.get("stars") != 1:
+        fails.append("bonus score did not stay a cosmetic +1: %s" % walked)
+    pg.evaluate("""() => { if (window.__GAME__) window.__GAME__.reset(); window.__DOOR_WALK__ = false; }""")
+    try:
+        pg.wait_for_function("() => window.__SPARK__ && window.__SPARK__.got && window.__STAGE3D__ && window.__STAGE3D__.sparkOn === 0 && window.__RUN__ && window.__RUN__.stars === 1 && window.__GAME__.state().status === 'playing' && !window.__GAME__.state().doorOpen", timeout=3000)
+    except Exception as ex:
+        hidden = pg.evaluate("() => ({on: window.__STAGE3D__ && window.__STAGE3D__.sparkOn, got: window.__SPARK__ && window.__SPARK__.got, stars: window.__RUN__ && window.__RUN__.stars, status: window.__GAME__.state().status, door: !!window.__GAME__.state().doorOpen})")
+        fails.append("reset did not keep the cosmetic star and a closed door: %s %s" % (hidden, str(ex)[:80]))
+    else:
+        print("spark after reset", pg.evaluate("() => ({on: window.__STAGE3D__.sparkOn, got: window.__SPARK__.got, stars: window.__RUN__.stars})"), flush=True)
+
+def check_results(pg, fails):
+    try:
+        pg.wait_for_selector("#results", timeout=4000)
+    except Exception as ex:
+        fails.append("results screen missing: " + str(ex)[:120])
+        return
+    res = pg.evaluate("""() => {
+      const el = document.getElementById('results');
+      el.scrollIntoView({ block: 'center', inline: 'nearest' });
+      const r = el.getBoundingClientRect();
+      return { text: (el.innerText || '').replace(/\\s+/g, ' ').trim(), data: window.__RESULTS__ || null, top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right), vh: innerHeight, vw: innerWidth };
+    }""")
+    print("results", res, flush=True)
+    text = (res or {}).get("text") or ""
+    data = (res or {}).get("data") or {}
+    if data.get("stars") != 1 or ("Stars collected: %s" % data.get("stars")) not in text:
+        fails.append("results stars: %s" % res)
+    if not re.search(r"Time: \d+:\d\d", text):
+        fails.append("results time: %s" % text)
+    if ES.search(text) or VER.search(text):
+        fails.append("results leak: " + text)
+    if res and (res["left"] < -1 or res["right"] > res["vw"] + 1 or res["top"] < -1 or res["bottom"] > res["vh"] + 1):
+        fails.append("results overflow the ending screen: %s" % res)
+    pg.screenshot(path=str(EV / "verify_touch_results.png"))
+
+def check_other_world(pg, fails):
+    other = (GAME / "w_gato.html").resolve().as_uri()
+    pg.goto(other + "?mute=1", wait_until="domcontentloaded")
+    try:
+        pg.wait_for_function("() => window.__STAGE3D__ && (window.__STAGE3D__.ok || window.__STAGE3D__.error) && window.__SPARK__", timeout=30000)
+    except Exception as ex:
+        fails.append("other world stage did not boot: " + str(ex)[:140])
+        return
+    info = pg.evaluate("() => ({cell: window.__SPARK__ && window.__SPARK__.cell, spark: window.__STAGE3D__.spark || 0, sample: (window.__BUNDLE__ && window.__BUNDLE__.sample) || ''})")
+    print("nospark", info, flush=True)
+    if info.get("cell") or info.get("spark"):
+        fails.append("sparkle star leaked outside playground_01: %s" % info)
+    pg.screenshot(path=str(EV / "verify_touch_nospark.png"))
+
+def restore_window(pg):
+    """Fullscreen from the demo Play tap blocks later viewport resizes."""
+    try:
+        pg.evaluate("""() => {
+          const d = document;
+          if (d.fullscreenElement && d.exitFullscreen) return d.exitFullscreen();
+        }""")
+    except Exception:
+        pass
+    try:
+        cdp = pg.context.new_cdp_session(pg)
+        info = cdp.send("Browser.getWindowForTarget")
+        cdp.send("Browser.setWindowBounds", {
+            "windowId": info["windowId"],
+            "bounds": {"windowState": "normal"},
+        })
+        try:
+            cdp.detach()
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+def check_landscape(pg, fails):
+    restore_window(pg)
+    pg.set_viewport_size({"width": 844, "height": 390})
+    pg.goto(GALLERY, wait_until="domcontentloaded")
+    pg.wait_for_timeout(250)
+    bad = layout_overflow(pg)
+    print("land gallery", bad, flush=True)
+    if bad:
+        fails.append("landscape gallery overflow: " + " | ".join(bad[:8]))
+    scan(pg, "land-gallery", fails)
+    pg.screenshot(path=str(EV / "verify_touch_gallery_land.png"))
+    pg.goto(INDEX + "?mute=1", wait_until="domcontentloaded")
+    pg.wait_for_timeout(300)
+    bad = layout_overflow(pg)
+    print("land index", bad, flush=True)
+    if bad:
+        fails.append("landscape lab overflow: " + " | ".join(bad[:8]))
+    scan(pg, "land-index", fails)
+    pg.screenshot(path=str(EV / "verify_touch_index_land.png"))
+    pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded")
+    pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready", timeout=30000)
+    dismiss(pg)
+    pg.wait_for_timeout(250)
+    bad = layout_overflow(pg)
+    print("land play", bad, flush=True)
+    if bad:
+        fails.append("landscape play overflow: " + " | ".join(bad[:8]))
+    rows = boxes_under(pg, "#pz, #mu, #home, #dpad button")
+    print("land targets", rows, flush=True)
+    require_56(fails, rows, "landscape")
+    scan(pg, "land-play", fails)
+    pg.screenshot(path=str(EV / "verify_touch_play_land.png"))
+    restore_window(pg)
+    pg.wait_for_timeout(150)
+    pg.set_viewport_size({"width": 390, "height": 844})
+
 def full_path(pg, fails):
     pg.goto(GALLERY, wait_until="domcontentloaded")
     pg.wait_for_timeout(300)
@@ -672,6 +872,11 @@ def full_path(pg, fails):
     hud_ok(pg, fails, 1)
     scan(pg, "scene1", fails)
     pg.screenshot(path=str(EV / "verify_touch_scene1.png"))
+    scene_fit = layout_overflow(pg)
+    print("scene1 fit", scene_fit, flush=True)
+    if scene_fit:
+        fails.append("portrait play overflow: " + " | ".join(scene_fit[:8]))
+    check_spark(pg, fails)
     juice_scene(pg, fails)
     for n, nxt in ((1, "play_2.html"), (2, "play_3.html")):
         pg.evaluate("() => { window.__HOLD_FX__ = 1800 }")
@@ -732,6 +937,9 @@ def full_path(pg, fails):
         fails.append("ending confetti missing star or ribbon: %s" % cele)
     pg.wait_for_timeout(280)
     scan(pg, "ending", fails)
+    check_results(pg, fails)
+    pg.evaluate("() => { const h = document.querySelector('#ps h1'); if (h) h.scrollIntoView({ block: 'start' }); }")
+    pg.wait_for_timeout(150)
     pg.screenshot(path=str(EV / "verify_touch_ending.png"))
     if "You did it" not in "\n".join(visible(pg)):
         fails.append("ending screen did not show You did it")
@@ -760,6 +968,11 @@ def main():
             err.name = 'NotAllowedError';
             throw err;
           };
+          // Demo Play calls requestFullscreen. That maximizes the Chromium
+          // window and the next set_viewport_size throws. Keep the call, no-op it.
+          const fsNop = () => Promise.resolve();
+          try { Element.prototype.requestFullscreen = fsNop; } catch (e) {}
+          try { Document.prototype.exitFullscreen = fsNop; } catch (e) {}
         """)
         pg = ctx.new_page()
         errs = []
@@ -773,6 +986,15 @@ def main():
             full_path(pg, fails)
             check_reduced(browser, fails)
             check_es(pg, fails)
+            check_other_world(pg, fails)
+            check_landscape(pg, fails)
+            pg.goto(GALLERY, wait_until="domcontentloaded")
+            pg.wait_for_timeout(200)
+            fit = layout_overflow(pg)
+            print("portrait gallery", fit, flush=True)
+            if fit:
+                fails.append("portrait gallery overflow: " + " | ".join(fit[:8]))
+            pg.screenshot(path=str(EV / "verify_touch_gallery_portrait.png"))
         except Exception as ex:
             try: pg.screenshot(path=str(EV / "verify_touch_FAIL.png"))
             except Exception: pass

@@ -9,6 +9,24 @@ var v=document.querySelector('meta[name=viewport]');if(!v){v=document.createElem
   const FB = [[/estrellitas/gi, 'little stars'], [/estrellita/gi, 'little star'], [/estrellas/gi, 'stars'], [/estrella/gi, 'star'], [/nenes/gi, 'kids'], [/nena/gi, 'girl'], [/nene/gi, 'kid'], [/fantasmita/gi, 'little ghost'], [/fantasma/gi, 'ghost'], [/monstruito/gi, 'little monster'], [/monstruo/gi, 'monster'], [/piedritas/gi, 'little rocks'], [/piedras/gi, 'rocks'], [/piedra/gi, 'rock'], [/huesitos/gi, 'little bones'], [/huesito/gi, 'little bone'], [/huesos/gi, 'bones'], [/hueso/gi, 'bone'], [/castillo/gi, 'castle'], [/casita/gi, 'little house'], [/casas/gi, 'houses'], [/casa/gi, 'house'], [/agua/gi, 'water'], [/fueguitos/gi, 'little fires'], [/fuegos/gi, 'fires'], [/fuego/gi, 'fire'], [/nubes/gi, 'clouds'], [/nube/gi, 'cloud'], [/mariposa/gi, 'butterfly'], [/gatito/gi, 'kitten'], [/gatos/gi, 'cats'], [/gato/gi, 'cat'], [/perrito/gi, 'puppy'], [/perro/gi, 'dog'], [/nave/gi, 'ship'], [/dragones/gi, 'dragons'], [/drag[oó]n|dragon/gi, 'dragon'], [/escenas/gi, 'scenes'], [/escena/gi, 'scene'], [/juntalos|juntá|junta/gi, 'collect'], [/esquivá|esquiva/gi, 'dodge'], [/llegá|llega/gi, 'reach'], [/puerta/gi, 'door']];
   const tr = s => { if (s == null) return ''; s = String(s); if (ES || !s) return s; if (Object.prototype.hasOwnProperty.call(DICT, s)) return DICT[s]; let o = s; for (const [re, en] of FB) o = o.replace(re, en); return o; };
   window.__tr = tr;
+  const RUN_KEY = 'dj_run_v1';
+  function loadRun() { try { const r = JSON.parse(sessionStorage.getItem(RUN_KEY) || 'null'); return r && typeof r === 'object' ? r : null; } catch (e) { return null; } }
+  function saveRun(r) { window.__RUN__ = r; try { sessionStorage.setItem(RUN_KEY, JSON.stringify(r)); } catch (e) {} }
+  function freshRun() { const r = { t0: Date.now(), stars: 0, got: {}, sample: (B && B.sample) || '' }; saveRun(r); return r; }
+  function ensureRun() {
+    const sample = (B && B.sample) || '', level = (B && B.play && B.play.level) || 1;
+    if (level === 1 && q.get('go') !== '1') return freshRun();
+    const r = loadRun();
+    if (!r || r.sample !== sample || !r.t0) return freshRun();
+    saveRun(r); return r;
+  }
+  // Optional playground bonus. Not a goal, wall, or door, so the solver path stays the same.
+  (function placeSpark() {
+    const sample = (B && B.sample) || '', level = (B && B.play && B.play.level) || 1;
+    const on = /playground_01/.test(sample) && level === 1;
+    const run = ensureRun();
+    window.__SPARK__ = { cell: on ? { x: 4, y: 3, id: 'spark_patio' } : null, got: false, score: run.stars || 0 };
+  })();
   function englishChrome() {
     const reps = [
       [/Dibujo Jugable — demo para jueces/g, "Playable Drawing — judge demo"],
@@ -124,7 +142,7 @@ body.play #wrap{width:min(100vw,calc(100vh*4/3))!important;padding:0!important;b
 body.play #c3d{border-radius:0!important;box-shadow:none!important}body.s3d.play #c{opacity:0!important}
 body.play #c,body.play #c3d,body.play #wrap,body.play #gamecard{touch-action:none}
 body.play #ps{position:relative!important;z-index:70!important}
-#ps .scr{position:fixed;inset:0;z-index:88;background:radial-gradient(120% 90% at 50% 20%,#2a1f4aee,#07050ff5 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;color:#fff;font-family:"Comic Sans MS","Chalkboard SE",cursive;text-align:center;transition:opacity .35s;overflow:auto;padding:calc(88px + env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom));touch-action:pan-y;-webkit-overflow-scrolling:touch}
+#ps .scr{position:fixed;inset:0;z-index:88;background:radial-gradient(120% 90% at 50% 20%,#2a1f4aee,#07050ff5 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;justify-content:safe center;gap:18px;color:#fff;font-family:"Comic Sans MS","Chalkboard SE",cursive;text-align:center;transition:opacity .35s;overflow:auto;padding:calc(88px + env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom));touch-action:pan-y;-webkit-overflow-scrolling:touch}
 #ps .scr.off{opacity:0;pointer-events:none}
 #ps .bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(6px) brightness(.45) saturate(1.3);transform:scale(1.08);z-index:-1;animation:kb 18s ease-in-out infinite alternate}
 @keyframes kb{to{transform:scale(1.2) translate(-2%,-2%)}}
@@ -200,7 +218,35 @@ body.touch #tale{left:0;bottom:0;transform:none}
 #tale .hint{font:700 18px/1.3 system-ui,"Segoe UI",sans-serif;color:#ffd27a;margin-top:6px}
 @media (prefers-reduced-motion:no-preference){#tale .art{animation:taleBob 1.8s ease-in-out infinite}}
 @keyframes taleBob{50%{transform:translateY(-8px) scale(1.05)}}
-@media (prefers-reduced-motion:reduce){#tale,#tale .art{animation:none!important;transition:none!important;transform:none!important}}`;
+#h3spark{min-height:44px}#h3spark[hidden]{display:none!important}
+#sparkpop{display:none;align-self:flex-start;background:#2a1248f2;color:#fff6c2;border:3px solid #ffd27a;border-radius:16px;padding:6px 12px;font:900 22px "Comic Sans MS",cursive;box-shadow:0 6px 0 #0008}
+#sparkpop.on{display:inline-flex}
+#results{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:min(96vw,640px)}
+#results b{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:8px 14px;border-radius:16px;background:#120818f5;box-shadow:0 0 0 3px #ffd27a;font-size:clamp(16px,4.2vw,22px);color:#fffaf2}
+#onb,#demoNote,#tale,#pzo{overflow:auto}
+@media (max-height:520px){
+#ps .scr{justify-content:flex-start;gap:8px;padding-top:calc(64px + env(safe-area-inset-top))}
+#ps h1{font-size:28px}
+#ps .duo img{max-height:72px;width:auto;max-width:min(40vw,200px);object-fit:contain}
+#ps .scr .msg{font-size:16px!important}
+#ps .big{min-height:56px;padding:10px 18px;font-size:18px}
+#hud3{top:calc(68px + env(safe-area-inset-top))!important}
+#hud3 .pill{min-height:32px;font-size:16px;padding:4px 10px}
+#h3c{font-size:15px;padding:6px 10px;max-width:min(96vw,520px)}
+#h3c .pip{font-size:18px}
+#home{min-height:56px;height:56px;min-width:96px;font-size:18px;padding:0 10px}
+#pz,#mu{width:56px;height:56px;min-width:56px;min-height:56px;font-size:26px}
+#mu{right:calc(74px + env(safe-area-inset-right))!important}
+#dpad{width:188px;height:188px;grid-template-columns:56px 56px 56px;grid-template-rows:56px 56px 56px;gap:10px;bottom:calc(6px + env(safe-area-inset-bottom));right:calc(6px + env(safe-area-inset-right))}
+#dpad button{width:56px;height:56px;min-width:56px;min-height:56px;font-size:22px}
+#stick{width:120px;height:120px}
+#stick .knob{width:56px;height:56px;min-width:56px;min-height:56px;margin:-28px 0 0 -28px}
+#tale .art{font-size:48px}
+#onb .card,#demoNote .card,#tale .card{font-size:18px;padding:12px;gap:6px;margin:8px auto}
+#demoNote img{max-height:72px}
+#combo{top:16%;font-size:32px}
+}
+@media (prefers-reduced-motion:reduce){#tale,#tale .art,#sparkpop.on{animation:none!important;transition:none!important;transform:none!important}}`;
   document.head.appendChild(css);
   const ps = document.createElement('div'); ps.id = 'ps'; document.body.appendChild(ps);
   const el = (h) => { const d = document.createElement('div'); d.innerHTML = h.trim(); return d.firstChild; }, sl = ms => new Promise(r => setTimeout(r, ms));
@@ -234,7 +280,7 @@ body.touch #tale{left:0;bottom:0;transform:none}
     window.__JUICE__.transition = '';
     revealPad();
   }
-  const hud = el('<div id="hud3"><span id="h3s" class="pill"></span><span id="h3c" role="status" aria-live="polite"></span></div>'); document.body.appendChild(hud);
+  const hud = el('<div id="hud3"><span id="h3s" class="pill"></span><span id="h3spark" class="pill" hidden>✨ 0</span><span id="h3c" role="status" aria-live="polite"></span></div>'); document.body.appendChild(hud);
   hud.querySelector('#h3s').textContent = `${T('Scene', 'Escena')} ${P.level}/${P.total}`;
   document.body.appendChild(el(`<a id="home" href="${addQ('gallery.html')}">🏠 ${T('Home', 'Inicio')}</a>`));
   const screen = (h, bg) => { const s = el(`<div class="scr off">${bg ? `<div class="bg" style="background-image:url('${bg}')"></div>` : ''}${h}</div>`); ps.appendChild(s); requestAnimationFrame(() => s.classList.remove('off')); return s; };
@@ -299,7 +345,7 @@ body.touch #tale{left:0;bottom:0;transform:none}
   // procedural SFX (WebAudio, no assets) + mute toggle
   let AC = null, MUTED = q.get('mute') === '1' || localStorage.getItem('dj_mute') === '1';
   const tone = (f, d = .12, t = 'sine', v = .18, at = 0, f2) => { if (MUTED) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); const o = AC.createOscillator(), g = AC.createGain(), n = AC.currentTime + at; o.type = t; o.frequency.setValueAtTime(f, n); if (f2) o.frequency.exponentialRampToValueAtTime(f2, n + d); g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(v, n + .01); g.gain.exponentialRampToValueAtTime(.001, n + d); o.connect(g).connect(AC.destination); o.start(n); o.stop(n + d + .02); } catch (e) {} };
-  const SFX = { collect: () => { tone(880, .09, 'triangle'); tone(1320, .14, 'triangle', .16, .07); }, door: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, .25, 'sine', .14, i * .08)); }, win: () => { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .35, 'triangle', .16, i * .1)); tone(1568, .6, 'sine', .12, .55); }, oops: () => tone(320, .35, 'sawtooth', .09, 0, 110), fix: () => { tone(600, .05, 'square', .06); tone(760, .05, 'square', .06, .09); tone(920, .05, 'square', .06, .18); }, scan: () => tone(1200, .05, 'sine', .05), ok: () => { tone(784, .12, 'triangle', .16); tone(1175, .3, 'triangle', .16, .1); }, lose: () => tone(300, .4, 'triangle', .12, 0, 150), tap: () => tone(660, .05, 'sine', .08) };
+  const SFX = { collect: () => { tone(880, .09, 'triangle'); tone(1320, .14, 'triangle', .16, .07); }, spark: () => { tone(1046, .08, 'sine', .12); tone(1568, .16, 'triangle', .14, .06); tone(2093, .22, 'sine', .1, .12); }, door: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, .25, 'sine', .14, i * .08)); }, win: () => { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, .35, 'triangle', .16, i * .1)); tone(1568, .6, 'sine', .12, .55); }, oops: () => tone(320, .35, 'sawtooth', .09, 0, 110), fix: () => { tone(600, .05, 'square', .06); tone(760, .05, 'square', .06, .09); tone(920, .05, 'square', .06, .18); }, scan: () => tone(1200, .05, 'sine', .05), ok: () => { tone(784, .12, 'triangle', .16); tone(1175, .3, 'triangle', .16, .1); }, lose: () => tone(300, .4, 'triangle', .12, 0, 150), tap: () => tone(660, .05, 'sine', .08) };
   // anti-stack: same cue at most once per 140ms; log every fired cue (window.__SFX_LOG__) for tests
   { const last = {}; window.__SFX_LOG__ = []; Object.keys(SFX).forEach(k => { const f = SFX[k]; SFX[k] = () => { const n = performance.now(); if (n - (last[k] || -1e9) < 140) return; last[k] = n; window.__SFX_LOG__.push(k + (MUTED ? ':muted' : '')); f(); }; }); }
   window.__SFX__ = SFX;
@@ -322,7 +368,46 @@ body.touch #tale{left:0;bottom:0;transform:none}
     clearTimeout(showCombo._t);
     showCombo._t = setTimeout(() => { if (c.isConnected) { c.classList.remove('on'); c.style.opacity = '0'; } }, REDUCED_MOTION ? 1600 : 4000);
   }
-  let done = false; setInterval(() => { const g = G(); if (!g || !g.spec) return; const S = g.state(), sp = g.spec; const prevC = window.__VC__ || 0; if (S.collected.length < prevC) { window.__VC__ = S.collected.length; window.__COMBO_N__ = 0; window.__COMBO_AT__ = 0; } const delta = S.collected.length - (window.__VC__ || 0); const gained = delta > 0; if (gained) { const nowMs = performance.now(); const chain = (nowMs - (window.__COMBO_AT__ || 0)) <= 2800; const n = chain ? (window.__COMBO_N__ || 0) + delta : delta; window.__COMBO_N__ = n; window.__COMBO_AT__ = nowMs; window.__VC__ = S.collected.length; SFX.collect(); if (n >= 2) showCombo(n); if (!REDUCED_MOTION) try { navigator.vibrate && navigator.vibrate(40); } catch (e) {} } const h = document.getElementById('h3c'); if (h) { const goals = sp.goals || [], text = objective(sp, S), showPips = (sp.win_condition || {}).type === 'collect_all', pips = showPips ? pipsFor(goals, S.collected.length, gained) : '', sig = text + '|' + S.collected.length + '|' + (S.doorOpen ? 1 : 0), door = !!(S.doorOpen && sp.door); if (h.dataset.sig !== sig) { const textChanged = !!(h.dataset.text && text !== h.dataset.text); if (textChanged && !REDUCED_MOTION) { h._pend = { text, pips, door, sig }; if (!h.dataset.leaving) { h.dataset.leaving = '1'; h.classList.remove('in'); h.classList.add('out'); setTimeout(() => { const pnd = h._pend; if (!pnd || !h.isConnected) { delete h.dataset.leaving; return; } paintBanner(h, pnd.text, pnd.pips, pnd.door); h.dataset.sig = pnd.sig; h.dataset.text = pnd.text; delete h.dataset.leaving; }, 180); } } else if (textChanged || !h.dataset.text) { paintBanner(h, text, pips, door); h.dataset.sig = sig; h.dataset.text = text; } else { h.classList.toggle('door', door); const box = h.querySelector('.pips'); if (box) box.innerHTML = pips; else paintBanner(h, text, pips, door); h.dataset.sig = sig; } } }
+  function paintSpark() {
+    const el = document.getElementById('h3spark'); if (!el) return;
+    const plaza = /playground_01/.test((B && B.sample) || '');
+    if (!plaza) { el.hidden = true; return; }
+    el.hidden = false; el.textContent = '✨ ' + ((window.__RUN__ && window.__RUN__.stars) || 0);
+  }
+  function sparkPop() {
+    let c = document.getElementById('sparkpop');
+    if (!c) { c = document.createElement('div'); c.id = 'sparkpop'; c.setAttribute('role', 'status'); const host = document.getElementById('hud3'); if (!host) return; host.appendChild(c); }
+    c.textContent = T('Bonus star!', '¡Estrella extra!');
+    c.classList.add('on'); clearTimeout(sparkPop._t);
+    sparkPop._t = setTimeout(() => { if (c.isConnected) c.classList.remove('on'); }, REDUCED_MOTION ? 900 : 1600);
+  }
+  function watchSpark() {
+    paintSpark();
+    const g = G(), spk = window.__SPARK__;
+    if (!g || !spk || !spk.cell || !g.spec || !g.spec.player) return;
+    let S; try { S = g.state(); } catch (e) { return; }
+    if (!S || !S.player) return;
+    const home = S.steps === 0 && S.status === 'playing' && S.player.x === g.spec.player.x && S.player.y === g.spec.player.y;
+    if (home) { const r = window.__RUN__; spk.got = !!(r && r.got && r.got[spk.cell.id]); }
+    if (!spk.got && S.status === 'playing' && S.player.x === spk.cell.x && S.player.y === spk.cell.y) {
+      spk.got = true;
+      const r = loadRun();
+      if (r && !r.got[spk.cell.id]) { r.got[spk.cell.id] = 1; r.stars = (r.stars || 0) + 1; saveRun(r); }
+      spk.score = (window.__RUN__ && window.__RUN__.stars) || 0;
+      try { SFX.spark(); } catch (e) {}
+      sparkPop(); paintSpark();
+    }
+  }
+  function hookSpark() {
+    const g = G(); if (!g || !g.move || g.__sparkHook) return !!g;
+    const mv = g.move, rs = g.reset;
+    g.move = function () { const r = mv.apply(this, arguments); try { watchSpark(); } catch (e) {} return r; };
+    g.reset = function () { const out = rs.apply(this, arguments); window.__DS__ = 0; window.__DOOR_WALK__ = false; try { watchSpark(); } catch (e) {} return out; };
+    g.__sparkHook = true; return true;
+  }
+  window.__WATCH_SPARK__ = watchSpark;
+  const hookIv = setInterval(() => { if (hookSpark()) clearInterval(hookIv); }, 40);
+  let done = false; setInterval(() => { try { watchSpark(); } catch (e) {} const g = G(); if (!g || !g.spec) return; const S = g.state(), sp = g.spec; const prevC = window.__VC__ || 0; if (S.collected.length < prevC) { window.__VC__ = S.collected.length; window.__COMBO_N__ = 0; window.__COMBO_AT__ = 0; } const delta = S.collected.length - (window.__VC__ || 0); const gained = delta > 0; if (gained) { const nowMs = performance.now(); const chain = (nowMs - (window.__COMBO_AT__ || 0)) <= 2800; const n = chain ? (window.__COMBO_N__ || 0) + delta : delta; window.__COMBO_N__ = n; window.__COMBO_AT__ = nowMs; window.__VC__ = S.collected.length; SFX.collect(); if (n >= 2) showCombo(n); if (!REDUCED_MOTION) try { navigator.vibrate && navigator.vibrate(40); } catch (e) {} } const h = document.getElementById('h3c'); if (h) { const goals = sp.goals || [], text = objective(sp, S), showPips = (sp.win_condition || {}).type === 'collect_all', pips = showPips ? pipsFor(goals, S.collected.length, gained) : '', sig = text + '|' + S.collected.length + '|' + (S.doorOpen ? 1 : 0), door = !!(S.doorOpen && sp.door); if (h.dataset.sig !== sig) { const textChanged = !!(h.dataset.text && text !== h.dataset.text); if (textChanged && !REDUCED_MOTION) { h._pend = { text, pips, door, sig }; if (!h.dataset.leaving) { h.dataset.leaving = '1'; h.classList.remove('in'); h.classList.add('out'); setTimeout(() => { const pnd = h._pend; if (!pnd || !h.isConnected) { delete h.dataset.leaving; return; } paintBanner(h, pnd.text, pnd.pips, pnd.door); h.dataset.sig = pnd.sig; h.dataset.text = pnd.text; delete h.dataset.leaving; }, 180); } } else if (textChanged || !h.dataset.text) { paintBanner(h, text, pips, door); h.dataset.sig = sig; h.dataset.text = text; } else { h.classList.toggle('door', door); const box = h.querySelector('.pips'); if (box) box.innerHTML = pips; else paintBanner(h, text, pips, door); h.dataset.sig = sig; } } }
     if (S.doorOpen && !window.__DS__) { window.__DS__ = 1; SFX.door(); }
     if (S.status === 'lost' && !done) { done = true; SFX.lose(); setTimeout(() => { g.reset(); done = false; }, 1400); }
     if (S.doorOpen && S.status === 'playing' && window.__AUTO_DOOR__ !== false && !window.__DOOR_WALK__ && window.__DEMO_PLAY_DONE__) walkDoor(g);
@@ -331,7 +416,15 @@ body.touch #tale{left:0;bottom:0;transform:none}
     const S0 = g.state().player, prev = { [S0.x + ',' + S0.y]: null }, Q = [[S0.x, S0.y]]; while (Q.length) { const [x, y] = Q.shift(); if (x === D.x && y === D.y) break; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const k = (x + dx) + ',' + (y + dy); if (x + dx < 0 || y + dy < 0 || x + dx >= W || y + dy >= H || wall.has(k) || k in prev) continue; prev[k] = [x, y, dx, dy]; Q.push([x + dx, y + dy]); } }
     const mv = []; let k = D.x + ',' + D.y; while (prev[k]) { const [x, y, dx, dy] = prev[k]; mv.unshift([dx, dy]); k = x + ',' + y; } for (const m of mv) { if (g.state().status !== 'playing') break; g.move(...m); await sl(180); } }
   async function next() { if (!last) { fxLock('iris'); wipe.textContent = T("🚪 The door is waiting… let's go!", '🚪 ¡La puerta te está esperando… vamos!'); void wipe.offsetWidth; wipe.classList.add('on'); await sl(REDUCED_MOTION ? 40 : 900); const hold = +window.__HOLD_FX__ || 0; if (hold) await sl(Math.min(hold, 4000)); location.href = addQ(P.next + '?go=1'); return; }
-    const s = screen(`<h1>${T('🌟 You did it! 🌟', '🌟 ¡Lo lograste! 🌟')}</h1><div class="msg">${T('What you drew is a real game now.<br>You beat all 3 scenes!', 'Lo que dibujaste ahora es un juego de verdad.<br>¡Pasaste las 3 escenas!')}</div><div class="duo"><img src="${drawing}"><b>➜</b><img src="${hero}"></div><div class="msg" style="font-size:22px;opacity:.9">${T('What will you draw next? ✏️', '¿Qué vas a dibujar ahora? ✏️')}</div><button class="big">${T('Play again', 'Jugar de nuevo')}</button> <a class="big" href="${addQ('gallery.html')}" style="display:inline-block;margin-top:10px;color:#fff;text-decoration:none;opacity:.9">${T('🎨 See more games', '🎨 Ver más juegos')}</a>`, hero);
+    const run = loadRun() || { t0: Date.now(), stars: 0 };
+    const ms = Math.max(0, Date.now() - (run.t0 || Date.now()));
+    const secAll = Math.round(ms / 1000), mins = Math.floor(secAll / 60), secs = secAll % 60;
+    const clock = mins + ':' + (secs < 10 ? '0' : '') + secs;
+    const starsN = run.stars || 0;
+    window.__RESULTS__ = { stars: starsN, ms: ms, time: clock };
+    const starLine = T('Stars collected: ' + starsN, 'Estrellas juntadas: ' + starsN);
+    const timeLine = T('Time: ' + clock, 'Tiempo: ' + clock);
+    const s = screen(`<h1>${T('🌟 You did it! 🌟', '🌟 ¡Lo lograste! 🌟')}</h1><div class="msg">${T('What you drew is a real game now.<br>You beat all 3 scenes!', 'Lo que dibujaste ahora es un juego de verdad.<br>¡Pasaste las 3 escenas!')}</div><div id="results" role="status"><b>${esc(starLine)}</b><b>${esc(timeLine)}</b></div><div class="duo"><img src="${drawing}"><b>➜</b><img src="${hero}"></div><div class="msg" style="font-size:22px;opacity:.9">${T('What will you draw next? ✏️', '¿Qué vas a dibujar ahora? ✏️')}</div><button class="big">${T('Play again', 'Jugar de nuevo')}</button> <a class="big" href="${addQ('gallery.html')}" style="display:inline-block;margin-top:10px;color:#fff;text-decoration:none;opacity:.9">${T('🎨 See more games', '🎨 Ver más juegos')}</a>`, hero);
     s.querySelector('button').onclick = () => location.href = addQ(window.__FIRST__ || 'play.html'); setTimeout(() => confetti(s), REDUCED_MOTION ? 0 : 80); }
   function confetti(host) {
     const c = document.createElement('canvas'); c.id = 'winconfetti'; c.className = 'confetti'; c.setAttribute('aria-hidden', 'true');

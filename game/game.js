@@ -45,7 +45,7 @@
   // rules shared with agent/playtest.py (see scripts/parity_check.md): spawn inside hazard = instant loss
   function spawnCheck() { const hz = (spec.hazards || []).find(h => inR(S.player, h)); if (hz) { S.status = 'lost'; S.events.push('spawn_in_hazard:' + hz.id); }
     const f = S.foes.find(f => f.x === S.player.x && f.y === S.player.y); if (f && S.status === 'playing') { S.status = 'lost'; S.events.push('spawn_on_enemy:' + f.id); } }
-  function reset() { FX.seen = { status: 'playing', col: 0 }; FX.parts = []; FX.trail = []; GATES.forEach(g => { g.open = false; g.sealed = false; g.shownAt = 0; }); Object.assign(S, { status: 'playing', steps: 0, ticks: 0, player: { ...spec.player }, foes: initFoes(), events: [], collected: [] }); spawnCheck(); draw(); }
+  function reset() { FX.seen = { status: 'playing', col: 0 }; FX.parts = []; FX.trail = []; GATES.forEach(g => { g.open = false; g.sealed = false; g.shownAt = 0; }); Object.assign(S, { status: 'playing', steps: 0, ticks: 0, doorOpen: false, player: { ...spec.player }, foes: initFoes(), events: [], collected: [] }); spawnCheck(); draw(); }
   // ---- render layer (visual only; game rules above untouched -> parity with agent/playtest.py preserved) ----
   // "Tu dibujo cobra vida": hand-drawn doodle sprites keyed by entity name, kid's drawing faintly inked into the paper.
   const PAL = { ink: '#2b2118', paper: '#fdf6e3' };
