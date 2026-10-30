@@ -109,29 +109,72 @@ export function winTitle(text) {
   const texture = new THREE.CanvasTexture(canvas); texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
   const title = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false }));
   title.scale.set(8, 2, 1); title.renderOrder = 20; group.add(title);
-  const count = 300;
-  const confetti = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.16, 0.07), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, toneMapped: false }), count);
-  confetti.instanceMatrix.setUsage(THREE.DynamicDrawUsage); confetti.frustumCulled = false; group.add(confetti);
-  const rand = mulberry32(0xC0FFEE);
-  const dummy = new THREE.Object3D(); const color = new THREE.Color(); const items = [];
-  for (let i = 0; i < count; i++) {
-    const it = { x: (rand() * 2 - 1) * 4.6, y: -2 + rand() * 5.8, z: (rand() * 2 - 1) * 1.3, speed: 0.7 + rand() * 1.5, rx: rand() * 6.283, ry: rand() * 6.283, rz: rand() * 6.283, sx: (rand() * 2 - 1) * 3, sy: (rand() * 2 - 1) * 3, sz: (rand() * 2 - 1) * 3, sway: rand() * 6.283 };
-    items.push(it); confetti.setColorAt(i, color.setHSL(i / count, 1, 0.58));
-    dummy.position.set(it.x, it.y, it.z); dummy.rotation.set(it.rx, it.ry, it.rz); dummy.updateMatrix(); confetti.setMatrixAt(i, dummy.matrix);
+  const reduced = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(location.search).get('still') === '1'; } catch (e) { return false; } })();
+  const count = reduced ? 48 : 360;
+  const starCanvas = document.createElement('canvas'); starCanvas.width = starCanvas.height = 64;
+  const sx = starCanvas.getContext('2d');
+  if (sx) {
+    sx.fillStyle = '#fff'; sx.beginPath();
+    for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, r = i % 2 ? 11 : 28, px = 32 + Math.cos(a) * r, py = 32 + Math.sin(a) * r; i ? sx.lineTo(px, py) : sx.moveTo(px, py); }
+    sx.closePath(); sx.fill();
   }
-  if (confetti.instanceColor) confetti.instanceColor.needsUpdate = true;
+  const starMap = new THREE.CanvasTexture(starCanvas); starMap.colorSpace = THREE.SRGBColorSpace;
+  const rectN = Math.round(count * 0.7), starN = count - rectN;
+  const confetti = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.24, 0.1), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide, toneMapped: false }), rectN);
+  const stars = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.22, 0.22), new THREE.MeshBasicMaterial({ map: starMap, transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }), starN);
+  [confetti, stars].forEach(m => { m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; group.add(m); });
+  const rand = mulberry32(0xC0FFEE);
+  const dummy = new THREE.Object3D(); const color = new THREE.Color();
+  const palette = ['#ffd54f', '#ff8ac2', '#6fe3ff', '#7dffb0', '#fff6c2', '#c38bff', '#ff7043', '#ffffff'];
+  const seed = (it, burst) => {
+    const ang = rand() * 6.283, spd = 1.5 + rand() * 3.1;
+    it.x = burst ? Math.cos(ang) * 0.15 : (rand() * 2 - 1) * 4.4;
+    it.y = burst ? 0.15 : -1.5 + rand() * 4.4;
+    it.z = (rand() * 2 - 1) * (burst ? 0.35 : 1.3);
+    it.vx = Math.cos(ang) * spd * (burst ? 1 : 0.12);
+    it.vy = burst ? (2.6 + rand() * 3.4) : (0.4 + rand());
+    it.vz = Math.sin(ang) * spd * 0.22;
+    it.rx = rand() * 6.283; it.ry = rand() * 6.283; it.rz = rand() * 6.283;
+    it.sx = (rand() * 2 - 1) * 5; it.sy = (rand() * 2 - 1) * 5; it.sz = (rand() * 2 - 1) * 5;
+    it.sc = 0.75 + rand() * 1.15;
+  };
+  const rects = [], starItems = [];
+  for (let i = 0; i < rectN; i++) { const it = {}; seed(it, !reduced); rects.push(it); }
+  for (let i = 0; i < starN; i++) { const it = {}; seed(it, !reduced); starItems.push(it); }
+  if (reduced) {
+    rects.concat(starItems).forEach(it => { it.x = (rand() * 2 - 1) * 4.6; it.y = -1.6 + rand() * 4.2; it.z = (rand() * 2 - 1) * 1.2; it.vx = it.vy = it.vz = 0; });
+  }
+  const paint = (mesh, list) => {
+    list.forEach((it, i) => {
+      mesh.setColorAt(i, color.set(palette[i % palette.length]));
+      dummy.position.set(it.x, it.y, it.z); dummy.rotation.set(it.rx, it.ry, it.rz); dummy.scale.setScalar(it.sc); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+    });
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+  paint(confetti, rects); paint(stars, starItems);
+  const tick = (mesh, list) => {
+    for (let i = 0; i < list.length; i++) {
+      const it = list[i];
+      it.vy -= 2.6 * step; it.x += it.vx * step; it.y += it.vy * step; it.z += it.vz * step;
+      it.rx += it.sx * step; it.ry += it.sy * step; it.rz += it.sz * step;
+      if (it.y < -2.5) seed(it, true);
+      dummy.position.set(it.x, it.y, it.z); dummy.rotation.set(it.rx, it.ry, it.rz); dummy.scale.setScalar(it.sc); dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+  };
+  let step = 0.016;
   group.userData = {
+    count, reduced,
     update(t = 0, dt = 0.016) {
-      const step = dt || 0.016;
+      step = dt || 0.016;
       let pop = 1;
-      if (t < 0.6) { const p = THREE.MathUtils.clamp(t / 0.6, 0, 1); pop = p === 0 ? 0 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * (2 * Math.PI / 3)) + 1; title.position.y = 0; }
-      else title.position.y = Math.sin((t - 0.6) * 2.2) * 0.08;
+      if (!reduced && t < 0.6) { const p = THREE.MathUtils.clamp(t / 0.6, 0, 1); pop = p === 0 ? 0 : Math.pow(2, -10 * p) * Math.sin((p * 10 - 0.75) * (2 * Math.PI / 3)) + 1; title.position.y = 0; }
+      else if (!reduced) title.position.y = Math.sin((t - 0.6) * 2.2) * 0.08;
+      else title.position.y = 0;
       title.scale.set(8 * pop, 2 * pop, 1);
-      for (let i = 0; i < items.length; i++) {
-        const it = items[i]; it.y -= it.speed * step; if (it.y < -2.2) it.y += 6; it.rx += it.sx * step; it.ry += it.sy * step; it.rz += it.sz * step;
-        dummy.position.set(it.x + Math.sin(t * 1.7 + it.sway) * 0.12, it.y, it.z); dummy.rotation.set(it.rx, it.ry, it.rz); dummy.updateMatrix(); confetti.setMatrixAt(i, dummy.matrix);
-      }
-      confetti.instanceMatrix.needsUpdate = true;
+      if (reduced) return;
+      tick(confetti, rects); tick(stars, starItems);
     }
   };
   return group;

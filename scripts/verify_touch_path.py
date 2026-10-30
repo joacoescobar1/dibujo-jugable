@@ -77,7 +77,17 @@ def dismiss(pg):
             continue
         tale = pg.locator("#tale")
         if tale.count() and tale.is_visible():
-            tale.tap()
+            # Reduced motion removes #tale on pointerdown before Playwright
+            # finishes the tap, then retries until timeout. A detach means it closed.
+            try:
+                tale.tap(force=True, timeout=2500)
+            except Exception:
+                pg.evaluate("""() => {
+                  const t = document.getElementById('tale');
+                  if (!t) return;
+                  t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true }));
+                  t.remove();
+                }""")
             pg.wait_for_timeout(200)
             continue
         break
@@ -174,6 +184,234 @@ def check_index(pg, fails):
     pg.wait_for_timeout(500)
     scan(pg, "index", fails)
 
+COLLECT_JS = r"""() => {
+  const G = window.__GAME__;
+  G.reset();
+  const sp = G.spec;
+  const wall = new Set();
+  const block = (x, y, w, h) => { for (let i = 0; i < (w || 1); i++) for (let j = 0; j < (h || 1); j++) wall.add((x + i) + ',' + (y + j)); };
+  (sp.walls || []).forEach(w => block(w.x, w.y, w.w, w.h));
+  (sp.hazards || []).forEach(w => block(w.x, w.y, w.w, w.h));
+  (G.gates ? G.gates() : []).forEach(g => { if (g.cell) wall.add(g.cell[0] + ',' + g.cell[1]); if (g.alt) wall.add(g.alt[0] + ',' + g.alt[1]); });
+  const W = sp.grid.w, H = sp.grid.h;
+  const foeAt = (x, y) => (G.state().foes || []).some(f => f.x === x && f.y === y);
+  function pathTo(tx, ty) {
+    const S = G.state();
+    const start = S.player.x + ',' + S.player.y;
+    const prev = {}; prev[start] = null;
+    const Q = [[S.player.x, S.player.y]];
+    const doorK = sp.door ? (sp.door.x + ',' + sp.door.y) : '';
+    const target = tx + ',' + ty;
+    let found = false;
+    while (Q.length) {
+      const [x, y] = Q.shift();
+      if (x === tx && y === ty) { found = true; break; }
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy, k = nx + ',' + ny;
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || wall.has(k) || k in prev) continue;
+        if (doorK && k === doorK && k !== target) continue;
+        if (foeAt(nx, ny)) continue;
+        prev[k] = [x, y, dx, dy];
+        Q.push([nx, ny]);
+      }
+    }
+    if (!found) return null;
+    const mv = []; let k = target;
+    while (prev[k]) { const row = prev[k]; mv.unshift([row[2], row[3]]); k = row[0] + ',' + row[1]; }
+    return mv;
+  }
+  const goals = (sp.goals || []).slice();
+  for (const g of goals) {
+    if ((G.state().collected || []).indexOf(g.id) >= 0) continue;
+    const mv = pathTo(g.x, g.y);
+    if (!mv) return { ok: false, why: 'no path', id: g.id, at: [G.state().player.x, G.state().player.y], status: G.state().status };
+    for (const m of mv) {
+      const st = G.state();
+      if (st.status !== 'playing') return { ok: false, why: 'stopped', status: st.status, events: (st.events || []).slice(-4) };
+      if (st.doorOpen && sp.door && st.player.x + m[0] === sp.door.x && st.player.y + m[1] === sp.door.y) {
+        return { ok: false, why: 'would step on open door', at: [st.player.x, st.player.y] };
+      }
+      G.move(m[0], m[1]);
+    }
+    const after = G.state();
+    if (after.status !== 'playing') return { ok: false, why: 'after goal', id: g.id, status: after.status, events: (after.events || []).slice(-4) };
+  }
+  const S = G.state();
+  const need = (sp.goals || []).length;
+  return { ok: S.status === 'playing' && S.collected.length >= Math.min(2, need) && (!sp.door || !!S.doorOpen), collected: S.collected.length, need: need, door: !!S.doorOpen, status: S.status, pos: [S.player.x, S.player.y] };
+}"""
+
+
+def juice_scene(pg, fails):
+    """Landing dust, collect combo, unlocked-door heartbeat. Leaves the level reset."""
+    origin = pos(pg)
+    moved = False
+    for sel in ("#dpad .r", "#dpad .d", "#dpad .l", "#dpad .u"):
+        pg.locator(sel).tap()
+        pg.wait_for_timeout(90)
+        if pos(pg)[:2] != origin[:2]:
+            moved = True
+            break
+    if not moved:
+        fails.append("could not step the hero to spawn landing dust")
+    else:
+        try:
+            pg.wait_for_function("() => window.__STAGE3D__ && window.__STAGE3D__.dust > 0", timeout=5000)
+        except Exception as ex:
+            fails.append("landing dust did not spawn: " + str(ex)[:140])
+        else:
+            info = pg.evaluate("() => ({dust: window.__STAGE3D__.dust, travel: window.__STAGE3D__.dustTravel, live: window.__STAGE3D__.dustLive, reduced: !!window.__STAGE3D__.reduced})")
+            print("dust", info, flush=True)
+            if info["reduced"]:
+                fails.append("main touch path unexpectedly has reduced motion")
+            if not info["dust"]:
+                fails.append("dust counter stayed at 0")
+            if info["travel"] != 1:
+                fails.append("landing dust should travel when motion is allowed: %s" % info)
+        pg.wait_for_timeout(160)
+        pg.screenshot(path=str(EV / "verify_touch_dust.png"))
+    pg.evaluate("() => window.__GAME__.reset()")
+    pg.wait_for_timeout(120)
+    walked = pg.evaluate(COLLECT_JS)
+    print("walk", walked, flush=True)
+    if not walked or not walked.get("ok") or not walked.get("door"):
+        fails.append("combo/door setup failed: %s" % walked)
+    else:
+        try:
+            pg.wait_for_function("() => { const c = document.getElementById('combo'); return !!(c && c.classList.contains('on') && /Combo/i.test(c.textContent || '') && /[2-9]/.test(c.textContent || '')); }", timeout=3000)
+        except Exception as ex:
+            fails.append("combo popup missing: " + str(ex)[:160])
+        combo = pg.evaluate("() => { const c = document.getElementById('combo'); return { text: c ? c.textContent : '', n: window.__JUICE__ && window.__JUICE__.combo }; }")
+        print("combo", combo, flush=True)
+        if ES.search(combo.get("text") or ""):
+            fails.append("combo popup is Spanish on the English path: " + (combo.get("text") or ""))
+        if not combo.get("n") or combo["n"] < 2:
+            fails.append("combo count did not reach 2: %s" % combo)
+        pg.screenshot(path=str(EV / "verify_touch_combo.png"), timeout=8000, animations="disabled")
+        seen = pg.evaluate("() => { const c = document.getElementById('combo'); if (!c) return null; const cs = getComputedStyle(c); return { on: c.classList.contains('on'), op: cs.opacity, text: c.textContent }; }")
+        print("combo seen", seen, flush=True)
+        if not seen or seen.get("op") == "0" or not seen.get("on"):
+            fails.append("combo popup faded before the screenshot: %s" % seen)
+        pg.evaluate("() => { const s = window.__STAGE3D__; s.heartbeatMax = 0; s.doorScaleMin = null; s.doorScaleMax = 0; }")
+        try:
+            pg.wait_for_function("() => window.__STAGE3D__ && window.__STAGE3D__.doorOpen && window.__STAGE3D__.heartbeatMax > 0.55 && (window.__STAGE3D__.doorScaleMax - window.__STAGE3D__.doorScaleMin) > 0.04", timeout=3500)
+        except Exception as ex:
+            snap = pg.evaluate("() => window.__STAGE3D__ && ({hb: window.__STAGE3D__.heartbeat, max: window.__STAGE3D__.heartbeatMax, min: window.__STAGE3D__.doorScaleMin, maxs: window.__STAGE3D__.doorScaleMax, open: window.__STAGE3D__.doorOpen})")
+            fails.append("unlocked door did not heartbeat: %s %s" % (snap, str(ex)[:80]))
+        else:
+            print("heart", pg.evaluate("() => ({max: window.__STAGE3D__.heartbeatMax, span: +(window.__STAGE3D__.doorScaleMax - window.__STAGE3D__.doorScaleMin).toFixed(3)})"), flush=True)
+            pg.screenshot(path=str(EV / "verify_touch_heartbeat.png"))
+    pg.evaluate("""() => {
+      const c = document.getElementById('combo'); if (c) c.remove();
+      if (window.__GAME__) window.__GAME__.reset();
+      window.__DOOR_WALK__ = false;
+    }""")
+    pg.wait_for_timeout(180)
+    st = pg.evaluate("() => window.__GAME__.state().status")
+    if st != "playing":
+        fails.append("juice left the scene in status %s" % st)
+
+
+def transition_state(pg):
+    return pg.evaluate("""() => {
+      const d = document.getElementById('dpad');
+      const w = document.getElementById('wipe');
+      const cs = d ? getComputedStyle(d) : null;
+      const btn = d ? d.querySelector('button') : null;
+      const hidden = !d || d.hidden || !!(cs && (cs.display === 'none' || cs.visibility === 'hidden' || cs.pointerEvents === 'none'));
+      const disabled = !d || d.getAttribute('aria-disabled') === 'true' || !!(btn && btn.disabled);
+      return { hidden: hidden, disabled: disabled, fx: w && w.dataset ? (w.dataset.fx || '') : '', on: !!(w && w.classList.contains('on')), transitioning: document.body.classList.contains('transitioning') };
+    }""")
+
+
+def check_transition(pg, fails, n):
+    try:
+        pg.wait_for_function("() => document.body.classList.contains('transitioning')", timeout=8000)
+    except Exception as ex:
+        fails.append("scene %s did not start a scene transition: %s" % (n, str(ex)[:120]))
+        return
+    fx = transition_state(pg)
+    print("transition", n, fx, flush=True)
+    if fx.get("fx") not in ("iris", "wipe"):
+        fails.append("scene %s transition was %r, expected iris or wipe" % (n, fx.get("fx")))
+    if not fx.get("hidden") or not fx.get("disabled"):
+        fails.append("D-pad stayed usable during the scene %s transition: %s" % (n, fx))
+    if n == 1:
+        try:
+            pg.screenshot(path=str(EV / "verify_touch_wipe.png"), timeout=8000, animations="disabled")
+        except Exception as ex:
+            fails.append("wipe screenshot failed: " + str(ex)[:160])
+
+
+def check_reduced(browser, fails):
+    ctx = browser.new_context(
+        viewport={"width": 390, "height": 844},
+        has_touch=True,
+        is_mobile=True,
+        device_scale_factor=2,
+        locale="en-US",
+        reduced_motion="reduce",
+        user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+    )
+    pg = ctx.new_page()
+    errs = []
+    pg.on("pageerror", lambda e: errs.append(str(e)))
+    try:
+        pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded")
+        pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready && window.__STAGE3D__ && (window.__STAGE3D__.ok || window.__STAGE3D__.error)", timeout=30000)
+        if pg.evaluate("() => window.__STAGE3D__.error || null"):
+            fails.append("reduced-motion stage failed: " + str(pg.evaluate("() => window.__STAGE3D__.error")))
+        dismiss(pg)
+        if not pg.evaluate("() => !!window.__STAGE3D__.reduced"):
+            fails.append("prefers-reduced-motion did not freeze stage motion")
+        origin = pos(pg)
+        for sel in ("#dpad .r", "#dpad .d", "#dpad .l", "#dpad .u"):
+            if not pg.locator("#dpad").is_visible():
+                break
+            pg.locator(sel).tap()
+            pg.wait_for_timeout(90)
+            if pos(pg)[:2] != origin[:2]:
+                break
+        pg.wait_for_function("() => window.__STAGE3D__.dust > 0", timeout=5000)
+        info = pg.evaluate("() => ({dust: window.__STAGE3D__.dust, travel: window.__STAGE3D__.dustTravel})")
+        print("reduced dust", info, flush=True)
+        if info["travel"] != 0:
+            fails.append("reduced-motion dust still travels: %s" % info)
+        pg.screenshot(path=str(EV / "verify_touch_reduced_dust.png"))
+        walked = pg.evaluate(COLLECT_JS)
+        print("reduced walk", walked, flush=True)
+        if not walked or not walked.get("door"):
+            fails.append("reduced-motion door setup failed: %s" % walked)
+        else:
+            pg.evaluate("() => { const s = window.__STAGE3D__; s.heartbeatMax = 0; s.doorScaleMin = null; s.doorScaleMax = 0; }")
+            pg.wait_for_timeout(1100)
+            snap = pg.evaluate("() => ({hb: window.__STAGE3D__.heartbeat, max: window.__STAGE3D__.heartbeatMax, min: window.__STAGE3D__.doorScaleMin, maxs: window.__STAGE3D__.doorScaleMax})")
+            print("reduced heart", snap, flush=True)
+            span = 0 if snap["min"] is None else abs((snap["maxs"] or 0) - snap["min"])
+            if snap["hb"] or snap["max"]:
+                fails.append("reduced-motion door still heartbeats: %s" % snap)
+            if span > 0.02:
+                fails.append("reduced-motion door scale still moves: %s" % snap)
+            pg.screenshot(path=str(EV / "verify_touch_reduced_door.png"))
+        pg.evaluate("() => window.__JUICE__ && window.__JUICE__.playConfetti && window.__JUICE__.playConfetti()")
+        pg.wait_for_timeout(150)
+        cele = pg.evaluate("() => ({n: window.__JUICE__ && window.__JUICE__.confetti, reduced: window.__JUICE__ && window.__JUICE__.confettiReduced, shapes: (window.__JUICE__ && window.__JUICE__.shapes) || [], canvas: !!document.getElementById('winconfetti')})")
+        print("reduced confetti", cele, flush=True)
+        if not cele["canvas"] or not cele["reduced"] or (cele["n"] or 0) < 36:
+            fails.append("reduced-motion win confetti was not a still burst: %s" % cele)
+        if "star" not in cele["shapes"] or "ribbon" not in cele["shapes"]:
+            fails.append("win confetti shapes missing star/ribbon: %s" % cele["shapes"])
+        pg.screenshot(path=str(EV / "verify_touch_reduced_confetti.png"))
+        scan(pg, "reduced", fails)
+    except Exception as ex:
+        try: pg.screenshot(path=str(EV / "verify_touch_reduced_FAIL.png"))
+        except Exception: pass
+        fails.append("reduced-motion EXCEPTION " + str(ex)[:300])
+    if errs:
+        fails.append("reduced pageerror " + " | ".join(errs[:4]))
+    ctx.close()
+
+
 def full_path(pg, fails):
     pg.goto(GALLERY, wait_until="domcontentloaded")
     pg.wait_for_timeout(300)
@@ -185,28 +423,64 @@ def full_path(pg, fails):
     dismiss(pg)
     scan(pg, "scene1", fails)
     pg.screenshot(path=str(EV / "verify_touch_scene1.png"))
+    juice_scene(pg, fails)
     for n, nxt in ((1, "play_2.html"), (2, "play_3.html")):
+        pg.evaluate("() => { window.__HOLD_FX__ = 1800 }")
         pg.evaluate("document.getElementById('auto').click()")
         pg.wait_for_function("() => window.__GAME__ && window.__GAME__.state().status === 'won'", timeout=180000)
+        pg.wait_for_timeout(280)
+        conf = pg.evaluate("() => (window.__STAGE3D__ && window.__STAGE3D__.confetti) || 0")
+        print("scene", n, "confetti3d", conf, flush=True)
+        if conf < 40:
+            fails.append("scene %s win confetti count %s" % (n, conf))
+        if n == 1:
+            pg.screenshot(path=str(EV / "verify_touch_win_confetti.png"))
         title = pg.evaluate("() => window.__WIN_TITLE__ || ''")
         print("scene", n, "win title", title, flush=True)
         if title != "YOU WIN!":
             fails.append("scene %s win title %r" % (n, title))
         scan(pg, "won%s" % n, fails)
+        check_transition(pg, fails, n)
         pg.wait_for_url("**/" + nxt + "*", timeout=20000)
         pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready", timeout=30000)
         pg.wait_for_timeout(900)
         dismiss(pg)
         scan(pg, "scene%s" % (n + 1), fails)
         pg.screenshot(path=str(EV / ("verify_touch_scene%s.png" % (n + 1))))
+        arrived = pg.evaluate("() => { const w = document.getElementById('wipe'); return w && w.dataset ? (w.dataset.fx || '') : ''; }")
+        expect = "wipe" if (n + 1) % 2 == 0 else "iris"
+        print("arrived", n + 1, arrived, flush=True)
+        if arrived != expect:
+            fails.append("scene %s arrival transition was %r, expected %s" % (n + 1, arrived, expect))
+        try:
+            pg.wait_for_function("() => !document.body.classList.contains('transitioning')", timeout=4000)
+        except Exception as ex:
+            fails.append("scene %s transition did not finish: %s" % (n + 1, str(ex)[:100]))
+        if not pg.locator("#dpad").is_visible():
+            fails.append("D-pad still hidden after scene %s transition" % (n + 1))
     pg.evaluate("document.getElementById('auto').click()")
     pg.wait_for_function("() => window.__GAME__ && window.__GAME__.state().status === 'won'", timeout=180000)
+    pg.wait_for_timeout(280)
+    conf = pg.evaluate("() => (window.__STAGE3D__ && window.__STAGE3D__.confetti) || 0")
+    print("scene 3 confetti3d", conf, flush=True)
+    if conf < 40:
+        fails.append("scene 3 win confetti count %s" % conf)
     title = pg.evaluate("() => window.__WIN_TITLE__ || ''")
     print("scene 3 win title", title, flush=True)
     if title != "YOU WIN!":
         fails.append("scene 3 win title %r" % (title,))
     pg.wait_for_function("() => document.body.innerText.includes('You did it')", timeout=20000)
-    pg.wait_for_timeout(400)
+    try:
+        pg.wait_for_function("() => !!document.getElementById('winconfetti')", timeout=4000)
+    except Exception as ex:
+        fails.append("ending confetti canvas missing: " + str(ex)[:120])
+    cele = pg.evaluate("() => ({n: window.__JUICE__ && window.__JUICE__.confetti, shapes: (window.__JUICE__ && window.__JUICE__.shapes) || []})")
+    print("ending confetti", cele, flush=True)
+    if (cele.get("n") or 0) < 40:
+        fails.append("ending confetti too small: %s" % cele)
+    if "star" not in cele.get("shapes", []) or "ribbon" not in cele.get("shapes", []):
+        fails.append("ending confetti missing star or ribbon: %s" % cele)
+    pg.wait_for_timeout(280)
     scan(pg, "ending", fails)
     pg.screenshot(path=str(EV / "verify_touch_ending.png"))
     if "You did it" not in "\n".join(visible(pg)):
@@ -246,6 +520,7 @@ def main():
             check_judge(pg, fails)
             check_index(pg, fails)
             full_path(pg, fails)
+            check_reduced(browser, fails)
         except Exception as ex:
             try: pg.screenshot(path=str(EV / "verify_touch_FAIL.png"))
             except Exception: pass

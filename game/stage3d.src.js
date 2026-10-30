@@ -170,10 +170,37 @@ function boot() {
   const RING_N = 8, ringPool = []; let ri = 0;
   for (let i = 0; i < RING_N; i++) { const m = new THREE.Mesh(new THREE.RingGeometry(.15, .28, 20), new THREE.MeshBasicMaterial({ color: '#fff6e0', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); ringPool.push(m); }
   function ring(x, z, col = '#fff6e0', sp = 1.09) { const m = ringPool[ri++ % RING_N]; m.visible = true; m.position.set(x, .04, z); m.scale.setScalar(1); m.material.color.set(col); m.material.opacity = .75; m.userData.sp = sp; }
+  // Landing dust: soft ground puffs. Reduced motion keeps one still puff (no travel).
+  const DUST_N = 28;
+  const dustT = ctex((x, w, h) => { const g = x.createRadialGradient(w / 2, h / 2, 2, w / 2, h / 2, w / 2); g.addColorStop(0, 'rgba(255,248,230,.95)'); g.addColorStop(.35, 'rgba(222,196,150,.62)'); g.addColorStop(1, 'rgba(170,140,90,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); }, 64, 64);
+  const dusts = [];
+  for (let i = 0; i < DUST_N; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(.7, .7), new THREE.MeshBasicMaterial({ map: dustT, transparent: true, opacity: 0, depthWrite: false, fog: false })); m.visible = false; m.renderOrder = 3; scene.add(m); dusts.push(m); }
+  let di = 0;
+  function puffDust(x, z) {
+    const fx = window.__STAGE3D__; const n = STILL ? 1 : (COARSE ? 5 : 8);
+    fx.dust = (fx.dust || 0) + n; fx.dustTravel = STILL ? 0 : 1;
+    for (let i = 0; i < n; i++) {
+      const m = dusts[di++ % DUST_N], a = (i / n) * 6.283 + (STILL ? 0 : Math.random() * .35), sp = STILL ? 0 : (.55 + Math.random() * .7);
+      m.visible = true; m.position.set(x + Math.cos(a) * .08, .07, z + Math.sin(a) * .08);
+      m.material.opacity = STILL ? .7 : .9; m.scale.setScalar(STILL ? .85 : .35);
+      m.userData.vx = Math.cos(a) * sp; m.userData.vz = Math.sin(a) * sp; m.userData.life = STILL ? .45 : (.5 + Math.random() * .28); m.userData.grow = STILL ? 0 : (1.1 + Math.random() * .7);
+    }
+  }
+  function tickDust() {
+    let live = 0;
+    for (const m of dusts) {
+      if (!m.visible) continue; live++; const ud = m.userData; ud.life -= .016;
+      if (!STILL) { m.position.x += ud.vx * .016; m.position.z += ud.vz * .016; m.position.y = .06; m.scale.setScalar(Math.min(1.55, m.scale.x + ud.grow * .016)); ud.vx *= .9; ud.vz *= .9; }
+      m.material.opacity = Math.max(0, ud.life * 1.7); m.quaternion.copy(cam.quaternion);
+      if (ud.life <= 0) m.visible = false;
+    }
+    window.__STAGE3D__.dustLive = live;
+  }
+  function heartBeat(now) { const u = (now % .92) / .92, g = (c, w) => Math.exp(-((u - c) * (u - c)) / (2 * w * w)); return Math.min(1, g(.06, .035) + g(.22, .028) * .65); }
   const juiceLight = new THREE.PointLight('#ffd54f', 0, 7.5, 2); juiceLight.position.set(0, -4, 0); scene.add(juiceLight);
   const hint = new THREE.Mesh(new THREE.ConeGeometry(.35, .7, 4), new THREE.MeshStandardMaterial({ color: '#ffe27a', emissive: '#ffb300', emissiveIntensity: 1.2 })); hint.rotation.x = Math.PI; hint.visible = false; scene.add(hint);
   const hintG = new THREE.Mesh(new THREE.RingGeometry(.55, .8, 32), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending })); hintG.rotation.x = -Math.PI / 2; hintG.visible = false; scene.add(hintG);
-  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED };
+  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED, dust: 0, dustLive: 0, dustTravel: 0, heartbeat: 0, heartbeatMax: 0, doorOpen: false, doorScale: 0, doorScaleMin: null, doorScaleMax: 0, confetti: 0 };
   // Composer resets the draw-call counter on every pass, so keep the main scene pass.
   let sceneCalls = 0; const renderScene = gl.render.bind(gl);
   gl.render = (s, c) => { renderScene(s, c); if (s === scene) sceneCalls = gl.info.render.calls; };
@@ -192,7 +219,7 @@ function boot() {
       else if (S.status === 'lost') { nudge(.55); if (!STILL) freeze = 4; burst(X(P.x), Z(P.y), 80, ['#ef5350', '#90caf9', '#2b2118']); tintT.set(1.3, .65, .7); } else { if (WT) WT.visible = false; tintT.set(1, 1, 1); steps.forEach(s => { s.visible = false; }); winT = 0; } seen.st = S.status; }
     if (!STILL && Math.random() < (COARSE ? .04 : .1)) burst(pp.x + (Math.random() - .5) * .4, pp.z + .2, 1, ['#ff9ad5', '#ffe27a', '#9be7ff'], .25);
     // actors
-    pp.lerp(new THREE.Vector3(X(P.x), 0, Z(P.y)), .28); if (hop > .05 && hop * .86 <= .05) { land = 1; ring(pp.x, pp.z); burst(pp.x, pp.z, 10, ['#e8d9b8', '#fff8e6', '#cdb98f'], .25); } hop *= .86; land *= .8; player.position.set(pp.x, Math.sin((1 - hop) * Math.PI) * hop * .5, pp.z);
+    pp.lerp(new THREE.Vector3(X(P.x), 0, Z(P.y)), .28); if (hop > .05 && hop * .86 <= .05) { land = 1; ring(pp.x, pp.z); puffDust(pp.x, pp.z); } hop *= .86; land *= .8; player.position.set(pp.x, Math.sin((1 - hop) * Math.PI) * hop * .5, pp.z);
     const sq = (1 + Math.sin(t * 5) * .04) * (1 - land * .25) * (1 + hop * .15); player.userData.q.scale.set(1 / sq, sq, 1); player.userData.q.rotation.z = Math.sin(t * 2.3) * .05;
     player.userData.q.material.emissiveIntensity = .08 + heroPulse * 2.2; player.userData.q.material.emissive.set(heroPulse > .04 ? '#ffe7a0' : '#ffffff'); heroPulse *= .9; juiceLight.intensity *= .88; if (juiceLight.intensity < .05) juiceLight.intensity = 0;
     if (S.status === 'won') { player.position.y += Math.min(3, (t - winT) * 1.2); player.rotation.y = (t - winT) * 4; }
@@ -202,7 +229,7 @@ function boot() {
     const live = new Set(); S.foes.forEach((f, i) => { live.add(f.id); const a = foes[f.id] || (foes[f.id] = (() => { const z = actor('enemy', f.label, 1.9, f.id); z.position.set(X(f.x), 0, Z(f.y)); return z; })());
       a.visible = true; a.position.lerp(new THREE.Vector3(X(f.x), 0, Z(f.y)), .2); a.userData.q.rotation.z = Math.sin(t * 4 + i) * .12; a.userData.halo.material.opacity = .35 + Math.sin(t * 6 + i) * .2; });
     Object.keys(foes).forEach(k => { if (!live.has(k)) foes[k].visible = false; });
-    if (doorA) { const o = !!S.doorOpen, ud = doorA.userData, pulse = STILL ? .85 : (.5 + .5 * Math.sin(now * (o ? 4.2 : 2.5))), beat = STILL ? (o ? .35 : 0) : Math.pow(Math.max(0, Math.sin(now * (o ? 6.5 : 3))), 2), near = Math.hypot(doorA.position.x - pp.x, doorA.position.z - pp.z) < 3.2 ? 1.7 : 1; ud.halo.material.opacity = (o ? .92 : .72) + pulse * .12; ud.halo.scale.setScalar((o ? 4.2 : 3.15) + pulse * .75); ud.q.material.color.set('#ffffff'); ud.q.material.emissive.set('#fff1c2'); ud.q.material.emissiveIntensity = (o ? 1.05 : .75) + pulse * .5 + (ud.flash || 0) * 1.5; ud.q.position.y = ud.size / 2 + (STILL ? 0 : Math.sin(now * 2.2) * .06); if (ud.light) ud.light.intensity = (o ? 6.4 : 3.5) + pulse * (o ? 3.4 : 2.2) + (ud.flash || 0) * 8; if (ud.beam) { ud.beam.material.opacity = (o ? .58 : .4) + pulse * .2; const bs = .92 + pulse * .2; ud.beam.scale.set(bs, 1, bs); } if (ud.pad) { ud.pad.scale.setScalar(1 + pulse * .16 + beat * .18 * near); ud.pad.material.opacity = .42 + pulse * .4; } if (ud.archMat) ud.archMat.color.set(o ? '#fff8d8' : '#ffd56a'); if (ud.flash) ud.flash *= .9; doorA.scale.setScalar(1 + (o ? .05 : .028) * pulse + beat * (o ? .07 * near : .02)); if (o && !STILL && Math.random() < (COARSE ? .04 : .12)) burst(doorA.position.x + (Math.random() - .5) * .5, doorA.position.z, 2, ['#fff6c2', '#ffd27a'], .8, 1.4, .45); }
+    if (doorA) { const o = !!S.doorOpen, ud = doorA.userData, hb = (!STILL && o) ? heartBeat(now) : 0, pulse = STILL ? (o ? 1 : .75) : (o ? (.35 + hb) : (.5 + .5 * Math.sin(now * 2.2))), beat = hb, near = Math.hypot(doorA.position.x - pp.x, doorA.position.z - pp.z) < 3.2 ? 1.7 : 1; ud.halo.material.opacity = (o ? .92 : .72) + pulse * .12; ud.halo.scale.setScalar((o ? 4.2 : 3.15) + pulse * .75); ud.q.material.color.set('#ffffff'); ud.q.material.emissive.set('#fff1c2'); ud.q.material.emissiveIntensity = (o ? 1.05 : .75) + pulse * .5 + (ud.flash || 0) * 1.5; ud.q.position.y = ud.size / 2 + (STILL ? 0 : Math.sin(now * 2.2) * .06); if (ud.light) ud.light.intensity = (o ? 6.4 : 3.5) + pulse * (o ? 3.4 : 2.2) + (ud.flash || 0) * 8; if (ud.beam) { ud.beam.material.opacity = (o ? .58 : .4) + pulse * .2; const bs = .92 + pulse * .2; ud.beam.scale.set(bs, 1, bs); } if (ud.pad) { ud.pad.scale.setScalar(1 + pulse * .16 + beat * .18 * near); ud.pad.material.opacity = .42 + pulse * .4; } if (ud.archMat) ud.archMat.color.set(o ? '#fff8d8' : '#ffd56a'); if (ud.flash) ud.flash *= .9; doorA.scale.setScalar(1 + (o ? .06 : .028) * pulse + beat * (o ? .22 * near : 0)); ud.hb = beat; ud.sc = doorA.scale.x; if (o && !STILL && beat > .72 && (ud._puff || 0) !== (now * 2 | 0)) { ud._puff = now * 2 | 0; burst(doorA.position.x, doorA.position.z, 6, ['#fff6c2', '#ffd27a'], .55, .4, .6); } else if (o && !STILL && Math.random() < (COARSE ? .03 : .08)) burst(doorA.position.x + (Math.random() - .5) * .5, doorA.position.z, 2, ['#fff6c2', '#ffd27a'], .8, 1.4, .45); }
     HZ.forEach((m, i) => { m.material.emissiveIntensity = m.userData.haz === 'f' ? 1.2 + Math.sin(t * 9 + i) * .5 : .35 + Math.sin(t * 2 + i) * .15; });
     MK.forEach((m, i) => { if (m.userData.bug !== undefined) { m.rotation.z = t * (m.userData.bug ? 1.5 : -.8); m.material.opacity = m.userData.bug ? .5 + .5 * Math.sin(t * 6) : .85; } });
     // gates: cleared + NEXT one only (mirrors game.js stagger)
@@ -231,9 +258,14 @@ function boot() {
     bloom.threshold = Math.max(.26, baseTh - bloomKick * .48); bloomKick *= .9;
     if (!STILL && S.status === 'won' && t - winT < 2.5 && Math.random() < (COARSE ? .12 : .4)) burst(pp.x + (Math.random() - .5) * 4, pp.z + (Math.random() - .5) * 2, 8, ['#ff5c8a', '#ffd54f', '#6fe3ff', '#7dffb0', '#c38bff'], 1.6);
     if (WT && WT.visible) WT.userData.update(t - WT.userData.t0, 1 / 60);
+    tickDust();
     const alive = tickParts();
     comp.render();
     const fx = window.__STAGE3D__; fx.frames++; fx.bloom = +bloom.strength.toFixed(3); fx.shake = STILL ? 0 : +shake.toFixed(3); fx.doorLight = doorA && doorA.userData.light ? +doorA.userData.light.intensity.toFixed(2) : 0; fx.alive = alive; fx.spawned = spawned; fx.calls = sceneCalls;
+    const hbv = doorA && doorA.userData ? (doorA.userData.hb || 0) : 0, scv = doorA && doorA.userData && doorA.userData.sc ? doorA.userData.sc : 0;
+    fx.heartbeat = +hbv.toFixed(3); fx.doorOpen = !!(S && S.doorOpen); fx.doorScale = +scv.toFixed(4); fx.reduced = REDUCED;
+    if (fx.doorOpen && !STILL && scv) { fx.heartbeatMax = Math.max(fx.heartbeatMax || 0, hbv); fx.doorScaleMin = fx.doorScaleMin == null ? scv : Math.min(fx.doorScaleMin, scv); fx.doorScaleMax = Math.max(fx.doorScaleMax || 0, scv); }
+    fx.confetti = WT && WT.userData ? (WT.userData.count || 0) : (fx.confetti || 0);
   }
   frame();
   G.render_game_to_text = () => { const S = G.state(); return JSON.stringify({ engine: 'three', status: S.status, player: [S.player.x, S.player.y], foes: S.foes.map(f => [f.id, f.x, f.y]), collected: S.collected, gates: (G.gates ? G.gates() : []).map(g => [g.id, g.open]) }); }; window.render_game_to_text = G.render_game_to_text;
