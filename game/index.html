@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset="utf-8"><title>Dibujo Jugable</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Playable Drawing</title>
 <style>
 body{background:#1b1b22;color:#eee;font-family:system-ui,sans-serif;margin:0;display:flex;gap:16px;justify-content:center;padding:16px}
 #main{text-align:center}canvas{background:#fffbe8;border-radius:8px;box-shadow:0 6px 24px #0008}
@@ -21,9 +21,73 @@ body{background:#1b1b22;color:#eee;font-family:system-ui,sans-serif;margin:0;dis
 
 canvas{box-shadow:0 10px 30px #000a,0 0 0 6px #fdf6e3,0 0 0 8px #c8b88a}
 </style></head>
-<body><a href="gallery.html" style="position:fixed;top:10px;right:12px;z-index:9;background:linear-gradient(90deg,#ef6c00,#fbc02d);color:#fff;text-decoration:none;padding:8px 16px;border-radius:20px;font-weight:800">🎨 Jugar demos · Para jueces →</a><div id="main"><h3 id="t">Dibujo Jugable</h3>
-<div id="hud"><span>Intento agente: <b id="att">1</b></span><span>Pasos: <b id="steps">0</b></span><span>Estado: <b id="st">jugando</b></span></div>
-<div id="wrap"><canvas id="c"></canvas><div id="ov"><div id="ovt"></div><small>R para reiniciar</small></div></div>
-<p id="s">Flechas para mover · R reinicia</p></div>
-<div id="tl"><h4>Timeline del agente</h4><ul id="tll"></ul></div>
+<body><a href="gallery.html" style="position:fixed;top:10px;right:12px;z-index:9;background:linear-gradient(90deg,#ef6c00,#fbc02d);color:#fff;text-decoration:none;padding:8px 16px;border-radius:20px;font-weight:800"><span data-es="🎨 Jugar demos · Para jueces →">🎨 Play demos · For judges →</span></a><div id="main"><h3 id="t">Playable Drawing</h3>
+<div id="hud"><span><span data-es="Intento agente:">Agent attempt:</span> <b id="att">1</b></span><span><span data-es="Pasos:">Steps:</span> <b id="steps">0</b></span><span><span data-es="Estado:">Status:</span> <b id="st">playing</b></span></div>
+<div id="wrap"><canvas id="c"></canvas><div id="ov"><div id="ovt"></div><small data-es="R para reiniciar">R to restart</small></div></div>
+<p id="s" data-es="Flechas para mover · R reinicia">Arrows to move · R restarts</p></div>
+<div id="tl"><h4 data-es="Timeline del agente">Agent timeline</h4><ul id="tll"></ul></div>
+<script>
+(function () {
+  if (new URLSearchParams(location.search).get('lang') !== 'es') return;
+  document.documentElement.lang = 'es';
+  document.title = 'Dibujo Jugable';
+  document.querySelectorAll('[data-es]').forEach(function (el) { el.textContent = el.getAttribute('data-es'); });
+})();
+</script>
+<script>window.__SPEC__ = {
+  "title": "The cat goes home",
+  "title_es": "El gato va a casa",
+  "source": {
+    "voice_transcript": "El gato tiene que llegar a la casa, no puede tocar el agua"
+  },
+  "genre": "top-down",
+  "grid": {
+    "w": 16,
+    "h": 12,
+    "tile": 40
+  },
+  "player": {
+    "id": "gato",
+    "label": "Cat",
+    "label_es": "Gato",
+    "x": 1,
+    "y": 1,
+    "color": "#f90"
+  },
+  "goals": [
+    {
+      "id": "casa",
+      "label": "House",
+      "label_es": "Casa",
+      "x": 14,
+      "y": 10,
+      "color": "#4c4"
+    }
+  ],
+  "hazards": [
+    {
+      "id": "rio",
+      "label": "Water",
+      "label_es": "Agua",
+      "x": 6,
+      "y": 0,
+      "w": 2,
+      "h": 9,
+      "effect": "lose",
+      "color": "#39f"
+    }
+  ],
+  "walls": [
+    {
+      "x": 10,
+      "y": 4,
+      "w": 1,
+      "h": 8
+    }
+  ],
+  "win_condition": {
+    "type": "reach_goal",
+    "target": "casa"
+  }
+};</script>
 <script src="game.js"></script></body></html>

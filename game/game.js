@@ -2,9 +2,12 @@
 // ?spec=<url> loads another spec; ?attempt=N sets HUD; ?timeline=<url> loads a timeline JSON (demo reel).
 (async () => {
   const q = new URLSearchParams(location.search);
-  const spec = window.__SPEC__ || await (await fetch(q.get('spec') || 'spec.json')).json();  // __SPEC__: inlined by demo.html (file:// safe)
+  const UI_ES = q.get('lang') === 'es', UI = (en, es) => UI_ES ? es : en;
+  let spec = window.__SPEC__;
+  if (!spec) { try { spec = await (await fetch(q.get('spec') || 'spec.json')).json(); } catch (e) { spec = null; } }
+  if (!spec || !spec.grid) { const msg = document.createElement('p'); msg.textContent = UI('This page could not load the level.', 'Esta página no pudo cargar el nivel.'); document.body.appendChild(msg); return; }
   const T = spec.grid.tile || 40, c = document.getElementById('c'), x = c.getContext('2d'), $ = id => document.getElementById(id);
-  c.width = spec.grid.w * T; c.height = spec.grid.h * T; $('t').textContent = spec.title;
+  c.width = spec.grid.w * T; c.height = spec.grid.h * T; const shownTitle = (UI_ES && spec.title_es) ? spec.title_es : spec.title; if ($('t')) $('t').textContent = (!UI_ES && window.__tr) ? window.__tr(shownTitle) : shownTitle;
   const inR = (p, r) => p.x >= r.x && p.x < r.x + (r.w || 1) && p.y >= r.y && p.y < r.y + (r.h || 1);
   // tick model shared with agent/playtest.py: every action (move/bump/wait) = 1 tick = 1 "second"; enemies then step their cyclic patrol
   const ENEMIES = (spec.characters || []).filter(c => c.role === 'enemy'), NPCS = (spec.characters || []).filter(c => c.role !== 'enemy');
@@ -239,13 +242,13 @@
   (function loop(t) { render(t); requestAnimationFrame(loop); })(performance.now());
   function GOAL_EMOJI() { const l = ((spec.goals || [])[0] || {}).label || ''; const M = [[/estrell|star/i, '⭐'], [/hueso|bone/i, '🦴'], [/castill|castle/i, '🏰'], [/tesoro|treasure|cofre/i, '💎'], [/nave|cohete|rocket/i, '🚀'], [/luna|moon/i, '🌙'], [/torta|pastel|cake/i, '🎂'], [/pelota|ball/i, '⚽']]; for (const [r, e] of M) if (r.test(l)) return e; return COLLECT ? '⭐' : '🏠'; }
   function LOSE_TEXT() { const e = S.events[S.events.length - 1] || '', id = e.split(':')[1] || '', k = KIND(id);  // name what got you (display-only)
-    if (e.startsWith('enemy') || e.startsWith('spawn_on_enemy')) return '¡TE ATRAPÓ! 👾'; if (k === 'fuego') return 'PERDISTE 🔥'; if (k === 'piedras') return 'PERDISTE 🪨'; return 'PERDISTE 💧'; }
+    if (e.startsWith('enemy') || e.startsWith('spawn_on_enemy')) return UI('CAUGHT! 👾', '¡TE ATRAPÓ! 👾'); if (k === 'fuego') return UI('YOU LOSE 🔥', 'PERDISTE 🔥'); if (k === 'piedras') return UI('YOU LOSE 🪨', 'PERDISTE 🪨'); return UI('YOU LOSE 💧', 'PERDISTE 💧'); }
   function draw() {
     juice(); render();
     $('att').textContent = S.attempt; $('steps').textContent = SURVIVE ? `${S.steps} · ⏱ ${S.ticks}/${WC.seconds}s` : COLLECT ? `${S.steps} · ★ ${S.collected.length}/${spec.goals.length}` : S.steps;
-    $('st').textContent = { playing: 'jugando', won: 'GANÓ', lost: 'PERDIÓ' }[S.status];
+    $('st').textContent = { playing: UI('playing', 'jugando'), won: UI('WON', 'GANÓ'), lost: UI('LOST', 'PERDIÓ') }[S.status];
     const ov = $('ov'); ov.className = S.status === 'playing' ? '' : S.status;
-    $('ovt').textContent = S.status === 'won' ? `¡GANASTE! ${GOAL_EMOJI()}` : S.status === 'lost' ? (window.__VOICE_FAIL__ ? '¡Te fuiste sin los 3 nenes! 0/3' : LOSE_TEXT()) : '';
+    $('ovt').textContent = S.status === 'won' ? `${UI('YOU WIN!', '¡GANASTE!')} ${GOAL_EMOJI()}` : S.status === 'lost' ? (window.__VOICE_FAIL__ ? UI('You left without the 3 kids! 0/3', '¡Te fuiste sin los 3 nenes! 0/3') : LOSE_TEXT()) : '';
   }
   function log(kind, text) { const li = document.createElement('li'); li.className = kind; li.textContent = text; $('tll').appendChild(li); }
   const K = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
