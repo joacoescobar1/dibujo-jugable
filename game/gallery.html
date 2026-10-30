@@ -7,7 +7,7 @@ h1{margin:12px 0 4px;font-size:clamp(32px,8vw,40px)}p.s{opacity:.8;margin:0 0 24
 .g{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:0 0 40px}
 .c{background:#1d1733;border-radius:18px;width:min(300px,92vw);overflow:hidden;box-shadow:0 10px 30px #000a}
 .c img{width:100%;height:220px;object-fit:cover;background:#fffbe8}
-.c h2{margin:12px 0 4px;font-size:22px;padding:0 10px;overflow-wrap:anywhere}.c p{margin:2px 14px 8px;font-size:17px;line-height:1.35;overflow-wrap:anywhere}.c small{opacity:.7;overflow-wrap:anywhere}.c{transition:transform .2s}.c:hover{transform:translateY(-6px) rotate(-1deg)}.soon{opacity:.55;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:420px;border:3px dashed #5a4d8a;background:#140f26}
+.c h2{margin:12px 0 4px;font-size:24px;padding:0 10px;overflow-wrap:anywhere;color:#fff8dc}.c h2::after{content:"";display:block;width:64px;height:3px;margin:6px auto 0;border-radius:99px;background:#ffd27a}.c p{margin:2px 14px 8px;font-size:17px;line-height:1.35;overflow-wrap:anywhere}.c small{opacity:.7;overflow-wrap:anywhere}.c{transition:transform .18s ease,box-shadow .18s ease}.c:hover{transform:translateY(-8px);box-shadow:0 0 0 4px #ffd27a,0 16px 28px #000c}.c:active,.c.pressed{transform:translateY(2px) scale(.98);box-shadow:0 0 0 4px #ffd27a,0 4px 0 #000a}.soon{opacity:.55;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:420px;border:3px dashed #5a4d8a;background:#140f26}
 p.note{opacity:.7;font-size:16px;padding:0 16px}
 .b{display:flex;gap:10px;justify-content:center;padding:14px;flex-wrap:wrap}
 a.btn{background:linear-gradient(90deg,#ef6c00,#fbc02d);color:#fff;text-decoration:none;padding:14px 22px;min-height:56px;min-width:56px;box-sizing:border-box;border-radius:24px;font-weight:800;font-size:20px;display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation}
@@ -15,8 +15,8 @@ a.alt{background:#3a3160;font-size:16px;padding:14px 18px}
 p.note a{display:inline-flex;align-items:center;justify-content:center;min-height:56px;min-width:56px;padding:8px 12px;touch-action:manipulation}
 footer{opacity:.55;font-size:12px;padding:8px 16px 20px}
 p.note,footer,h1,p.s{overflow-wrap:anywhere}
-@media (max-height:500px){h1{font-size:28px;margin:4px 0 2px}p.s{margin:0 0 8px}.c img{height:96px}.g{gap:12px;padding-bottom:12px}.soon{min-height:0}.c h2{font-size:18px;margin:8px 0 2px}.c p{font-size:15px}}
-@media (prefers-reduced-motion:reduce){.c{transition:none}.c:hover{transform:none}}
+@media (max-height:500px){h1{font-size:26px;margin:2px 0}p.s{margin:0 0 6px;font-size:15px}.c img{height:72px}.g{gap:12px;padding-bottom:8px}.soon{min-height:0}.c h2{font-size:20px;margin:6px 0 0}.c h2::after{margin-top:3px}.c p{font-size:14px;line-height:1.2;margin:2px 10px 4px}.c small{font-size:12px}.b{padding:6px 8px 8px}}
+@media (prefers-reduced-motion:reduce){.c{transition:none}.c:hover,.c:active,.c.pressed{transform:none;box-shadow:0 0 0 4px #ffd27a,0 10px 24px #000a}}
 </style></head><body>
 <h1 data-es="🎨 Dibujo Jugable">🎨 Playable Drawing</h1><p class="s" data-es="Dibujos de chicos convertidos en juegos. Elegí uno y jugá.">Kids' drawings are ready to play, so pick a card and jump in!</p>
 <div class="g">
@@ -41,11 +41,11 @@ p.note,footer,h1,p.s{overflow-wrap:anywhere}
  <div class="c" data-demo="perrocasa"><img src="thumb_perrocasa.jpg" alt="The dog goes home" data-es-alt="El perro va a la casa">
   <h2 data-es="El perro va a la casa">The Dog Goes Home</h2><p data-es="«El perro va a la casa y hay agua en el medio» 🐶💧🏠">Walk the dog home and hop over the puddle in the middle! 🐶💧🏠</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_perrocasa.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_perrocasa.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
- <div class="c" data-demo="navecasa"><img src="thumb_navecasa.jpg" alt="The ship looks for home" data-es-alt="La nave busca la casa">
-  <h2 data-es="La nave busca la casa">The Ship Looks for Home</h2><p data-es="«La nave busca la casa» 🚀🏡✨">Help the little ship find its house and land safe! 🚀🏡✨</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
+ <div class="c" data-demo="navecasa"><img src="thumb_navecasa.jpg" alt="Nova looks for home" data-es-alt="La nave busca la casa">
+  <h2 data-es="La nave busca la casa">Nova Looks for Home</h2><p data-es="«La nave busca la casa» 🚀🏡✨">Help the little ship find its house and land safe! 🚀🏡✨</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_navecasa.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_navecasa.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
- <div class="c" data-demo="gatito"><img src="thumb_gatito.jpg" alt="Kitten to the little star" data-es-alt="El gatito corre a la estrellita">
-  <h2 data-es="El gatito corre a la estrellita">Kitten to the Little Star</h2><p data-es="«el gatito corre a la estrellita» 🐱⭐💛">Race with the kitten all the way to the tiny shining star! 🐱⭐💛</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
+ <div class="c" data-demo="gatito"><img src="thumb_gatito.jpg" alt="Kitten runs to the star" data-es-alt="El gatito corre a la estrellita">
+  <h2 data-es="El gatito corre a la estrellita">Kitten Runs to the Star</h2><p data-es="«el gatito corre a la estrellita» 🐱⭐💛">Race with the kitten all the way to the tiny shining star! 🐱⭐💛</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_gatito.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_gatito.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
  <div class="c" data-demo="perroestrella"><img src="thumb_perroestrella.jpg" alt="The dog reaches the star" data-es-alt="El perro llega a la estrella">
   <h2 data-es="El perro llega a la estrella">The Dog Reaches the Star</h2><p data-es="«El perro tiene que llegar a la estrella sin tocar las piedras» 🐶🪨⭐">Help the dog reach the star and tiptoe around every rock! 🐶🪨⭐</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
@@ -53,17 +53,17 @@ p.note,footer,h1,p.s{overflow-wrap:anywhere}
  <div class="c" data-demo="navemonstruo"><img src="thumb_navemonstruo.jpg" alt="Ship, monster, and star" data-es-alt="La nave busca la estrella">
   <h2 data-es="La nave busca la estrella">Ship, Monster, and Star</h2><p data-es="«La nave busca la estrella esquivando las piedras pero un monstruo la cuida» 🚀👾⭐">Find the star, slip past the rocks, and wave at the monster on guard! 🚀👾⭐</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_navemonstruo.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_navemonstruo.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
- <div class="c" data-demo="gatoagua"><img src="thumb_gatoagua.jpg" alt="Cat across the water" data-es-alt="El gato llega a la casa">
-  <h2 data-es="El gato llega a la casa">Cat Across the Water</h2><p data-es="«El gato tiene que llegar a la casa, no puede tocar el agua» 🐱💧🤝">Get the cat to the house and keep every paw out of the water! 🐱💧🏠</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
+ <div class="c" data-demo="gatoagua"><img src="thumb_gatoagua.jpg" alt="Milo across the water" data-es-alt="El gato llega a la casa">
+  <h2 data-es="El gato llega a la casa">Milo Across the Water</h2><p data-es="«El gato tiene que llegar a la casa, no puede tocar el agua» 🐱💧🤝">Get the cat to the house and keep every paw out of the water! 🐱💧🏠</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_gatoagua.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_gatoagua.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
- <div class="c" data-demo="navepiedras"><img src="thumb_navepiedras.jpg" alt="Ship dodges the rocks" data-es-alt="La nave llega a la estrella">
-  <h2 data-es="La nave llega a la estrella">Ship Dodges the Rocks</h2><p data-es="«La nave llega a la estrella esquivando las piedras» 🛸🪨⭐">Steer the ship to the star and weave between the floating rocks! 🛸🪨⭐</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
+ <div class="c" data-demo="navepiedras"><img src="thumb_navepiedras.jpg" alt="Ship through the rocks" data-es-alt="La nave llega a la estrella">
+  <h2 data-es="La nave llega a la estrella">Ship Through the Rocks</h2><p data-es="«La nave llega a la estrella esquivando las piedras» 🛸🪨⭐">Steer the ship to the star and weave between the floating rocks! 🛸🪨⭐</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_navepiedras.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_navepiedras.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
- <div class="c" data-demo="gatofantasma"><img src="thumb_gatofantasma.jpg" alt="Another cat and ghost adventure" data-es-alt="El círculo y el agua azul">
-  <h2 data-es="El círculo y el agua azul">Another Cat and Ghost Adventure</h2><p data-es="«El gato va a la casa sin tocar el agua y hay un fantasma que camina por abajo» 🐱👻🏠 · <b>otra aventura</b>">Take a new path home with the cat, skip the water, and wave to the ghost! 🐱👻🏠</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
+ <div class="c" data-demo="gatofantasma"><img src="thumb_gatofantasma.jpg" alt="Milo's ghost path" data-es-alt="El círculo y el agua azul">
+  <h2 data-es="El círculo y el agua azul">Milo's Ghost Path</h2><p data-es="«El gato va a la casa sin tocar el agua y hay un fantasma que camina por abajo» 🐱👻🏠 · <b>otra aventura</b>">Take a new path home with the cat, skip the water, and wave to the ghost! 🐱👻🏠</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_gatofantasma.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_gatofantasma.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
- <div class="c" data-demo="naveguardian"><img src="thumb_naveguardian.jpg" alt="Ship among the rocks" data-es-alt="La nave despega entre piedras">
-  <h2 data-es="La nave despega entre piedras">Ship Among the Rocks</h2><p data-es="«La nave busca la estrella esquivando las piedras pero un monstruo la cuida» 🚀👾⭐ · <b>otra aventura</b>">Take another flight to the star, dodge the rocks, and say hi to the guardian! 🚀👾⭐</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
+ <div class="c" data-demo="naveguardian"><img src="thumb_naveguardian.jpg" alt="Nova among the rocks" data-es-alt="La nave despega entre piedras">
+  <h2 data-es="La nave despega entre piedras">Nova Among the Rocks</h2><p data-es="«La nave busca la estrella esquivando las piedras pero un monstruo la cuida» 🚀👾⭐ · <b>otra aventura</b>">Take another flight to the star, dodge the rocks, and say hi to the guardian! 🚀👾⭐</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_naveguardian.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_naveguardian.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
  <div class="c" data-demo="naveplaneta"><img src="thumb_naveplaneta.jpg" alt="Ship toward the sun" data-es-alt="La nave despega hacia el sol">
   <h2 data-es="La nave despega hacia el sol">Ship Toward the Sun</h2><p data-es="«Mi nave tiene que llegar a la estrella sin tocar las piedras, pero hay un monstruo que la cuida» 🚀🪐👾 · <b>otra aventura</b>">Aim your ship past the rocks toward the star while a monster keeps watch! 🚀🪐👾</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
@@ -74,8 +74,8 @@ p.note,footer,h1,p.s{overflow-wrap:anywhere}
  <div class="c" data-demo="milofuego"><img src="thumb_milofuego.jpg" alt="Milo looks for the bone" data-es-alt="Milo busca el hueso">
   <h2 data-es="Milo busca el hueso">Milo Looks for the Bone</h2><p data-es="«El gato quiere el hueso pero hay fuego» 🐱🔥🦴 · <b>otra aventura</b>">Milo the cat wants the bone, so pick a path that stays out of the fire! 🐱🔥🦴</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_milofuego.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_milofuego.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
- <div class="c" data-demo="perrofuego"><img src="thumb_perrofuego.jpg" alt="The first bone" data-es-alt="El primer hueso">
-  <h2 data-es="El primer hueso">The First Bone</h2><p data-es="«El perro busca el hueso y no puede tocar el fuego» 🐶🔥🦴 · <b>otra aventura</b>">Help the dog hunt for the first bone and stay out of the fire! 🐶🔥🦴</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
+ <div class="c" data-demo="perrofuego"><img src="thumb_perrofuego.jpg" alt="Pipo's first bone" data-es-alt="El primer hueso">
+  <h2 data-es="El primer hueso">Pipo's First Bone</h2><p data-es="«El perro busca el hueso y no puede tocar el fuego» 🐶🔥🦴 · <b>otra aventura</b>">Help the dog hunt for the first bone and stay out of the fire! 🐶🔥🦴</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
   <div class="b"><a class="btn" href="w_perrofuego.html" data-es="▶ Jugar">Play</a><a class="btn alt" href="w_perrofuego.html?judge=1" data-es="Vista jurado">Judge view</a></div></div>
  <div class="c" data-demo="perropiedras"><img src="thumb_perropiedras.jpg" alt="Rocco looks for the star" data-es-alt="Rocco busca la estrella">
   <h2 data-es="Rocco busca la estrella">Rocco Looks for the Star</h2><p data-es="«El perro tiene que llegar a la estrella sin tocar las piedras» 🐶🪨⭐ · <b>otra aventura</b>">Help Rocco the dog reach the star and hop around every rock! 🐶🪨⭐</p><small data-es="⏱ ~3 min · 3 escenas · 8–10 años · dibujo + regla de voz">About 3 minutes · 3 scenes · ages 8–10 · a drawing and a spoken rule</small>
@@ -87,10 +87,19 @@ p.note,footer,h1,p.s{overflow-wrap:anywhere}
 </div>
 <p class="note"><span data-es="Para jueces: “Vista jurado” muestra cómo el agente verifica el juego.">For judges: “Judge view” shows how the agent checks that the game can be won.</span> · <a href="index.html" style="color:#fbc02d" data-es="Laboratorio del agente">Agent lab</a></p>
 <footer data-es="Juegos pre-guardados: arte, regla de voz y niveles congelados en cada archivo. Sin llamadas en vivo a APIs.">Saved on this page: the art, the spoken rule, and the levels. You can play with no internet.</footer>
+<script src="story_splash.js"></script>
 <script>
 (function () {
   var ES = new URLSearchParams(location.search).get('lang') === 'es';
   var T = function (en, es) { return ES ? es : en; };
+  document.querySelectorAll('.c').forEach(function (card) {
+    var down = function () { card.classList.add('pressed'); };
+    var up = function () { card.classList.remove('pressed'); };
+    card.addEventListener('pointerdown', down);
+    card.addEventListener('pointerup', up);
+    card.addEventListener('pointercancel', up);
+    card.addEventListener('pointerleave', up);
+  });
   if (!ES) return;
   document.documentElement.lang = 'es';
   document.title = T('Playable Drawing · Gallery', 'Dibujo Jugable · Galería');

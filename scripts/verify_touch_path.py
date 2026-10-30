@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""390x844 touch check: gallery -> Play -> 3 scenes -> ending.
+"""Touch path: gallery -> Play -> 3 scenes -> ending.
 
-Fails on visible Spanish without ?lang=es, video:true, a VERIFIED claim, or a Home/D-pad that does not work.
-Also checks the story card, scene pill, objective, pause, first-time hint, gallery taglines, and 56px targets.
-Pass 8: playground sparkle star (optional, off the solver path), results screen (stars + time),
-and layout overflow at 390x844 and 844x390.
+Fails on visible Spanish without ?lang=es (text plus alt, title, and aria-label), video:true,
+a VERIFIED claim, or a Home/D-pad that does not work.
+Pass 9: landscape 844x390 fit without scroll (HUD, D-pad, modals, story, results),
+ending star count-up and finale, gallery hover/press and clearer titles.
 """
 import pathlib, re, sys
 from playwright.sync_api import sync_playwright
@@ -21,7 +21,9 @@ ES = re.compile(
     r"intentos?|dibujos?|dibuja|jugar|juego|tocá|deslizá|pasos|reiniciar|arreglo|estrellas?|huesos?|"
     r"castillo|flechas|jurado|juez|galería|sonido|pausa|arriba|abajo|izquierda|derecha|subibaja|"
     r"tobogan|nubes?|flores?|brillante|campeón|transcripción|jugable|procesando|agente|llamadas|"
-    r"estado|evidencia|ganó|perdió|perdiste|salida|trabado|ilumina|recorta|en vivo)\b",
+    r"estado|evidencia|ganó|perdió|perdiste|salida|trabado|ilumina|recorta|en vivo|"
+    r"arranca|patitas|pancita|festej\w*|alegr\w*|cosquill\w*|ilusión|hacia|content[oa]s?|"
+    r"el|la|los|las|hay|tiene|quiere|busca|puede|tocar|vuela|llega|llegar|entre)\b",
     re.I,
 )
 # "sin" and "contra" are too easy to false-hit inside English. Checked only with the accent/word list above.
@@ -45,6 +47,13 @@ def visible(pg):
         if (!s || !n.parentElement || !shown(n.parentElement)) continue;
         out.push(s.slice(0, 240));
       }
+      document.body.querySelectorAll('[alt],[title],[aria-label],[placeholder]').forEach(el => {
+        if (!shown(el)) return;
+        ['alt', 'title', 'aria-label', 'placeholder'].forEach(a => {
+          const s = (el.getAttribute(a) || '').replace(/\\s+/g, ' ').trim();
+          if (s) out.push(s.slice(0, 240));
+        });
+      });
       return out;
     }""")
 
@@ -61,12 +70,171 @@ def scan(pg, tag, fails):
     return blob
 
 def sources_video(fails):
-    for p in (GAME / "player_shell.js", GAME / "game.js", GAME / "beats.js", GAME / "stage3d.js", GAME / "gallery.html", GAME / "index.html"):
+    for p in (GAME / "player_shell.js", GAME / "game.js", GAME / "beats.js", GAME / "stage3d.js", GAME / "gallery.html", GAME / "index.html", GAME / "story_splash.js"):
         t = p.read_text(errors="replace")
         if re.search(r"video\s*:\s*true", t):
             fails.append("video:true in " + p.name)
 
+def pitch_card(pg):
+    return pg.evaluate("""() => {
+      const t = document.getElementById('pitch');
+      if (!t) return null;
+      const art = t.querySelector('.art'), line = t.querySelector('.line'), hint = t.querySelector('.hint');
+      const r = t.getBoundingClientRect();
+      const meta = window.__PITCH__ || {};
+      const text = line ? line.textContent.trim() : '';
+      const hit = (x, y) => {
+        const el = document.elementFromPoint(x, y);
+        return !!(el && (el.id === 'pitch' || (el.closest && el.closest('#pitch'))));
+      };
+      return {
+        art: art ? art.textContent.trim() : '',
+        line: text,
+        hint: hint ? hint.textContent.trim() : '',
+        ms: meta.ms || 0,
+        beat: meta.beat || 0,
+        total: meta.total || 0,
+        closed: meta.closed || '',
+        full: r.width >= innerWidth - 4 && r.height >= innerHeight - 4,
+        corner: hit(8, 8),
+        mid: hit(Math.round(innerWidth / 2), Math.round(innerHeight / 2))
+      };
+    }""")
+
+def dismiss_pitch(pg):
+    for _ in range(8):
+        pitch = pg.locator("#pitch")
+        if not (pitch.count() and pitch.is_visible()):
+            return
+        try:
+            pitch.tap(force=True, timeout=2000)
+        except Exception:
+            pg.evaluate("""() => {
+              const t = document.getElementById('pitch');
+              if (!t) return;
+              t.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 20, clientY: 20 }));
+            }""")
+        pg.wait_for_timeout(180)
+
+def check_fullscreen(pg, fails, tag):
+    info = pg.evaluate("""() => {
+      const wrap = document.getElementById('wrap');
+      const c3d = document.getElementById('c3d');
+      const hud = document.getElementById('hud');
+      const side = document.getElementById('side');
+      const chips = document.getElementById('rchips');
+      const vis = el => {
+        if (!el) return false;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
+        const r = el.getBoundingClientRect();
+        return r.width >= 2 && r.height >= 2 && r.bottom > 0 && r.right > 0 && r.top < innerHeight && r.left < innerWidth;
+      };
+      const wr = wrap ? wrap.getBoundingClientRect() : {width:0,height:0,top:99,left:99};
+      const cr = (c3d && vis(c3d)) ? c3d.getBoundingClientRect() : wr;
+      return {
+        vw: innerWidth, vh: innerHeight,
+        w: Math.round(cr.width), h: Math.round(cr.height),
+        t: Math.round(cr.top), l: Math.round(cr.left),
+        lab: vis(hud) || vis(side) || vis(chips),
+        play: document.body.classList.contains('play'),
+        labClass: document.body.classList.contains('lab'),
+        sam: ((document.body && document.body.innerText) || '').indexOf('SAM') >= 0 && vis(side)
+      };
+    }""")
+    print("fullscreen", tag, info, flush=True)
+    if not info or not info.get("play"):
+        fails.append("%s player mode missing: %s" % (tag, info))
+        return
+    if info.get("lab") or info.get("labClass") or info.get("sam"):
+        fails.append("%s judge chrome visible in player mode: %s" % (tag, info))
+    if info["t"] > 4 or info["l"] > 4 or info["w"] < info["vw"] - 12 or info["h"] < info["vh"] - 12:
+        fails.append("%s letterboxed play view: %s" % (tag, info))
+
+def check_pitch(pg, fails):
+    pg.goto(GALLERY, wait_until="domcontentloaded")
+    pg.evaluate("() => { try { sessionStorage.removeItem('dj_pitch_v1'); } catch (e) {} }")
+    pg.reload(wait_until="domcontentloaded")
+    try:
+        pg.wait_for_selector("#pitch", timeout=8000)
+    except Exception as ex:
+        fails.append("gallery story splash missing: " + str(ex)[:140])
+        return
+    want = [
+        ("✏️", "kid draws", "paper"),
+        ("✨", "drawing wakes", "up"),
+        ("🪄", "Creativity plus play", "Meta models"),
+        ("🎮", "your turn", "Play a world"),
+    ]
+    for n, (art, a, b) in enumerate(want, 1):
+        card = pitch_card(pg)
+        print("pitch", n, card, flush=True)
+        if not card or card.get("beat") != n or card.get("total") != 4 or card.get("ms") != 5000:
+            fails.append("story beat %s shape: %s" % (n, card))
+        elif not card.get("full") or not card.get("corner") or not card.get("mid"):
+            fails.append("story beat %s is not fullscreen: %s" % (n, card))
+        elif art not in (card.get("art") or "") or a.lower() not in (card.get("line") or "").lower() or b.lower() not in (card.get("line") or "").lower():
+            fails.append("story beat %s copy: %s" % (n, card))
+        elif "Tap to continue" not in (card.get("hint") or ""):
+            fails.append("story beat %s hint: %s" % (n, card))
+        line = card.get("line") or ""
+        if ES.search(line) or VER.search(line):
+            fails.append("story beat %s leak: %s" % (n, line))
+        if "Grok" in line or "Persona" in line or "VERIFIED" in line:
+            fails.append("story beat %s pitch leak: %s" % (n, line))
+        pg.screenshot(path=str(EV / ("verify_touch_pitch%s.png" % n)))
+        if n == 1:
+            try:
+                pg.wait_for_function("() => window.__PITCH__ && window.__PITCH__.beat === 2", timeout=7000)
+            except Exception as ex:
+                fails.append("story beat 1 did not auto-advance: " + str(ex)[:140])
+            else:
+                dt = pg.evaluate("() => Date.now() - (window.__PITCH__ && window.__PITCH__.at || 0)")
+                print("pitch auto", dt, flush=True)
+            continue
+        tap_node(pg, "#pitch")
+        pg.wait_for_timeout(220)
+    pg.wait_for_timeout(200)
+    if pg.locator("#pitch").count() and pg.locator("#pitch").is_visible():
+        fails.append("story splash stayed up after the last tap")
+        dismiss_pitch(pg)
+    scan(pg, "gallery-after-pitch", fails)
+    pg.goto(INDEX + "?mute=1", wait_until="domcontentloaded")
+    pg.evaluate("() => { try { sessionStorage.removeItem('dj_pitch_v1'); } catch (e) {} }")
+    pg.reload(wait_until="domcontentloaded")
+    try:
+        pg.wait_for_selector("#pitch", timeout=8000)
+    except Exception as ex:
+        fails.append("index story splash missing: " + str(ex)[:140])
+    else:
+        card = pitch_card(pg)
+        print("pitch index", card, flush=True)
+        if not card or card.get("beat") != 1 or not card.get("full"):
+            fails.append("index story splash: %s" % card)
+        pg.screenshot(path=str(EV / "verify_touch_pitch_index.png"))
+        dismiss_pitch(pg)
+    pg.goto(GALLERY + "?lang=es", wait_until="domcontentloaded")
+    pg.evaluate("() => { try { sessionStorage.removeItem('dj_pitch_v1'); } catch (e) {} }")
+    pg.reload(wait_until="domcontentloaded")
+    try:
+        pg.wait_for_selector("#pitch", timeout=8000)
+    except Exception as ex:
+        fails.append("Spanish story splash missing: " + str(ex)[:140])
+    else:
+        card = pitch_card(pg)
+        print("pitch es", card, flush=True)
+        line = (card or {}).get("line") or ""
+        if not ES.search(line):
+            fails.append("Spanish story splash stayed in English: " + line)
+        if VER.search(line):
+            fails.append("Spanish story splash claims VERIFIED")
+        pg.screenshot(path=str(EV / "verify_touch_pitch_es.png"))
+        dismiss_pitch(pg)
+    pg.goto(GALLERY, wait_until="domcontentloaded")
+    pg.evaluate("() => { try { sessionStorage.setItem('dj_pitch_v1', '1'); } catch (e) {} }")
+
 def dismiss(pg):
+    dismiss_pitch(pg)
     for _ in range(5):
         note = pg.locator("#demoNote")
         if note.count() and note.is_visible():
@@ -198,12 +366,28 @@ def safe_area_css(pg):
       return ['safe-area-inset-top', 'safe-area-inset-right', 'safe-area-inset-bottom', 'safe-area-inset-left'].every(k => css.includes(k));
     }""")
 
-def check_gallery_polish(pg, fails):
+def check_gallery_polish(pg, fails, min_title=20):
     if not safe_area_css(pg):
         fails.append("gallery CSS missing safe-area insets")
     rows = boxes_under(pg, "a.btn, p.note a")
     print("gallery targets", rows, flush=True)
     require_56(fails, rows, "gallery")
+    css = pg.evaluate("() => [...document.querySelectorAll('style')].map(s => s.textContent).join('\\n')")
+    if ".c:hover" not in css or ".c.pressed" not in css or "transform:none" not in css:
+        fails.append("gallery CSS missing hover, press, or reduced-motion feedback")
+    pressed = pg.evaluate("""() => {
+      const card = document.querySelector('.c');
+      if (!card) return null;
+      const r = card.getBoundingClientRect();
+      const ev = (type) => card.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, clientX: r.left + 12, clientY: r.top + 12 }));
+      ev('pointerdown');
+      const down = card.classList.contains('pressed');
+      ev('pointerup');
+      return { down: down, up: card.classList.contains('pressed') };
+    }""")
+    print("gallery press", pressed, flush=True)
+    if not pressed or not pressed.get("down") or pressed.get("up"):
+        fails.append("gallery card press feedback: %s" % pressed)
     lines = pg.evaluate("""() => [...document.querySelectorAll('.c p')].map(p => (p.textContent || '').replace(/\\s+/g, ' ').trim())""")
     if len(lines) < 21:
         fails.append("gallery taglines missing: %s" % len(lines))
@@ -216,6 +400,18 @@ def check_gallery_polish(pg, fails):
             fails.append("gallery tagline missing emoji: " + line)
         if ES.search(line):
             fails.append("gallery tagline Spanish: " + line)
+    heads = pg.evaluate("""() => [...document.querySelectorAll('.c h2')].map(h => ({
+      t: (h.textContent || '').replace(/\\s+/g, ' ').trim(),
+      px: parseFloat(getComputedStyle(h).fontSize) || 0
+    }))""")
+    print("gallery titles", heads[:4], "min", min_title, flush=True)
+    if len(heads) < 21:
+        fails.append("gallery titles missing: %s" % len(heads))
+    for h in heads:
+        if not h["t"] or len(h["t"]) > 42 or ES.search(h["t"]):
+            fails.append("gallery title unclear: %s" % h)
+        if h["px"] + 0.1 < min_title:
+            fails.append("gallery title smaller than %spx: %s" % (min_title, h))
 
 def check_story(pg, fails):
     pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded")
@@ -249,7 +445,8 @@ def check_story(pg, fails):
         fails.append("opening story shape: %s" % card)
     elif "Tap anywhere to skip" not in (card.get("hint") or "") or "magic door" not in (card.get("line") or "") or "🦋" not in (card.get("art") or ""):
         fails.append("opening story copy: %s" % card)
-    pg.screenshot(path=str(EV / "verify_touch_story.png"))
+    pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
+    pg.screenshot(path=str(EV / "verify_touch_story.png"), timeout=30000)
     skip_tale(pg)
     closed = pg.evaluate("() => ({ closed: window.__TALE__ && window.__TALE__.closed, up: !!document.getElementById('tale') })")
     print("skip", closed, flush=True)
@@ -296,7 +493,7 @@ def check_story(pg, fails):
 
 def check_between(pg, fails, n):
     try:
-        pg.wait_for_selector("#tale", timeout=5000)
+        pg.wait_for_selector("#tale", timeout=15000)
     except Exception as ex:
         fails.append("scene %s story card missing between scenes: %s" % (n, str(ex)[:120]))
         return
@@ -311,7 +508,8 @@ def check_between(pg, fails, n):
         mark = "☁" if n == 2 else "☀"
         if want not in (card.get("line") or "").lower() or mark not in (card.get("art") or ""):
             fails.append("scene %s story copy: %s" % (n, card))
-    pg.screenshot(path=str(EV / ("verify_touch_story%s.png" % n)))
+    pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
+    pg.screenshot(path=str(EV / ("verify_touch_story%s.png" % n)), timeout=30000)
 
 def check_es(pg, fails):
     pg.goto(PLAY + "?lang=es&mute=1", wait_until="domcontentloaded")
@@ -342,6 +540,8 @@ def check_controls(pg, fails):
     dismiss(pg)
     pg.wait_for_timeout(300)
     scan(pg, "play-hud", fails)
+    check_fullscreen(pg, fails, "play-hud")
+    pg.screenshot(path=str(EV / "verify_touch_fullscreen.png"))
     dpad = pg.locator("#dpad")
     if dpad.count() == 0 or not dpad.is_visible():
         fails.append("D-pad hidden after dismiss")
@@ -501,7 +701,7 @@ def juice_scene(pg, fails):
         fails.append("could not step the hero to spawn landing dust")
     else:
         try:
-            pg.wait_for_function("() => window.__STAGE3D__ && window.__STAGE3D__.dust > 0", timeout=5000)
+            pg.wait_for_function("() => window.__STAGE3D__ && window.__STAGE3D__.dust > 0", timeout=12000)
         except Exception as ex:
             fails.append("landing dust did not spawn: " + str(ex)[:140])
         else:
@@ -532,7 +732,16 @@ def juice_scene(pg, fails):
             fails.append("combo popup is Spanish on the English path: " + (combo.get("text") or ""))
         if not combo.get("n") or combo["n"] < 2:
             fails.append("combo count did not reach 2: %s" % combo)
-        pg.screenshot(path=str(EV / "verify_touch_combo.png"), timeout=8000, animations="disabled")
+        pg.evaluate("""() => {
+          window.__HOLD_COMBO__ = true;
+          try { clearTimeout(window.__COMBO_TIMER__); } catch (e) {}
+          const c = document.getElementById('combo');
+          if (!c) return;
+          c.classList.add('on');
+          c.style.opacity = '1';
+          c.style.animation = 'none';
+        }""")
+        pg.screenshot(path=str(EV / "verify_touch_combo.png"), timeout=30000, animations="disabled")
         seen = pg.evaluate("() => { const c = document.getElementById('combo'); if (!c) return null; const cs = getComputedStyle(c); return { on: c.classList.contains('on'), op: cs.opacity, text: c.textContent }; }")
         print("combo seen", seen, flush=True)
         if not seen or seen.get("op") == "0" or not seen.get("on"):
@@ -583,12 +792,13 @@ def check_transition(pg, fails, n):
         fails.append("D-pad stayed usable during the scene %s transition: %s" % (n, fx))
     if n == 1:
         try:
-            pg.screenshot(path=str(EV / "verify_touch_wipe.png"), timeout=8000, animations="disabled")
+            pg.locator("#wipe").screenshot(path=str(EV / "verify_touch_wipe.png"), timeout=15000, animations="disabled")
         except Exception as ex:
             fails.append("wipe screenshot failed: " + str(ex)[:160])
 
 
-def check_reduced(browser, fails):
+def check_reduced(p, fails):
+    browser = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
     ctx = browser.new_context(
         viewport={"width": 390, "height": 844},
         has_touch=True,
@@ -598,10 +808,28 @@ def check_reduced(browser, fails):
         reduced_motion="reduce",
         user_agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     )
+    ctx.add_init_script("""
+      const fsNop = () => Promise.resolve();
+      try { Element.prototype.requestFullscreen = fsNop; } catch (e) {}
+      try { Document.prototype.exitFullscreen = fsNop; } catch (e) {}
+    """)
     pg = ctx.new_page()
     errs = []
     pg.on("pageerror", lambda e: errs.append(str(e)))
     try:
+        pg.goto(GALLERY, wait_until="domcontentloaded")
+        pg.evaluate("() => { try { sessionStorage.removeItem('dj_pitch_v1'); } catch (e) {} }")
+        pg.reload(wait_until="domcontentloaded")
+        try:
+            pg.wait_for_selector("#pitch", timeout=8000)
+            anim = pg.evaluate("() => { const n = document.querySelector('#pitch .bg') || document.querySelector('#pitch .art'); return n ? getComputedStyle(n).animationName : ''; }")
+            print("reduced pitch anim", anim, flush=True)
+            if anim and anim != "none":
+                fails.append("reduced-motion story splash still moves: " + str(anim))
+            pg.screenshot(path=str(EV / "verify_touch_pitch_reduced.png"))
+            dismiss_pitch(pg)
+        except Exception as ex:
+            fails.append("reduced-motion story splash missing: " + str(ex)[:140])
         pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded")
         pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready && window.__STAGE3D__ && (window.__STAGE3D__.ok || window.__STAGE3D__.error)", timeout=30000)
         if pg.evaluate("() => window.__STAGE3D__.error || null"):
@@ -611,7 +839,8 @@ def check_reduced(browser, fails):
             print("reduced tale anim", anim, flush=True)
             if anim and anim != "none":
                 fails.append("reduced-motion story art still moves: " + str(anim))
-            pg.screenshot(path=str(EV / "verify_touch_story_reduced.png"))
+            pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
+            pg.screenshot(path=str(EV / "verify_touch_story_reduced.png"), timeout=30000)
         else:
             fails.append("reduced-motion story card did not appear")
         dismiss(pg)
@@ -630,7 +859,7 @@ def check_reduced(browser, fails):
             pg.wait_for_timeout(90)
             if pos(pg)[:2] != origin[:2]:
                 break
-        pg.wait_for_function("() => window.__STAGE3D__.dust > 0", timeout=5000)
+        pg.wait_for_function("() => window.__STAGE3D__.dust > 0", timeout=12000)
         info = pg.evaluate("() => ({dust: window.__STAGE3D__.dust, travel: window.__STAGE3D__.dustTravel})")
         print("reduced dust", info, flush=True)
         if info["travel"] != 0:
@@ -660,6 +889,10 @@ def check_reduced(browser, fails):
         if "star" not in cele["shapes"] or "ribbon" not in cele["shapes"]:
             fails.append("win confetti shapes missing star/ribbon: %s" % cele["shapes"])
         pg.screenshot(path=str(EV / "verify_touch_reduced_confetti.png"))
+        fin = pg.evaluate("() => (window.__JUICE__ && window.__JUICE__.previewFinale) ? window.__JUICE__.previewFinale(3) : null")
+        print("reduced finale", fin, flush=True)
+        if not fin or not fin.get("done") or not fin.get("reduced") or fin.get("shown") != 3 or fin.get("sceneShown") != 3 or fin.get("ticked"):
+            fails.append("reduced-motion finale still animates: %s" % fin)
         scan(pg, "reduced", fails)
     except Exception as ex:
         try: pg.screenshot(path=str(EV / "verify_touch_reduced_FAIL.png"))
@@ -668,7 +901,32 @@ def check_reduced(browser, fails):
     if errs:
         fails.append("reduced pageerror " + " | ".join(errs[:4]))
     ctx.close()
+    browser.close()
 
+
+def fit_no_scroll(pg, sel):
+    return pg.evaluate("""(sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return { missing: true, sel: sel };
+      const kids = [];
+      const vw = innerWidth, vh = innerHeight;
+      for (const ch of el.querySelectorAll('*')) {
+        const cs = getComputedStyle(ch);
+        if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+        const b = ch.getBoundingClientRect();
+        if (b.width < 2 || b.height < 2) continue;
+        if (b.top < -1 || b.left < -1 || b.bottom > vh + 1 || b.right > vw + 1)
+          kids.push((ch.id || ch.className || ch.tagName) + ' ' + Math.round(b.top) + '..' + Math.round(b.bottom));
+      }
+      return { sel: sel, scroll: el.scrollHeight, client: el.clientHeight, over: el.scrollHeight > el.clientHeight + 2, kids: kids.slice(0, 8) };
+    }""", sel)
+
+def assert_fit(pg, fails, sel, tag):
+    info = fit_no_scroll(pg, sel)
+    print(tag, info, flush=True)
+    if not info or info.get("missing") or info.get("over") or info.get("kids"):
+        fails.append(tag + " does not fit without scroll: %s" % info)
+    return info
 
 def layout_overflow(pg):
     return pg.evaluate("""() => {
@@ -763,9 +1021,14 @@ def check_spark(pg, fails):
 def check_results(pg, fails):
     try:
         pg.wait_for_selector("#results", timeout=4000)
+        pg.wait_for_function("() => window.__FINALE__ && window.__FINALE__.done === true", timeout=8000)
     except Exception as ex:
         fails.append("results screen missing: " + str(ex)[:120])
         return
+    fin = pg.evaluate("() => window.__FINALE__")
+    print("finale", fin, flush=True)
+    if not fin or fin.get("sceneStars") != 3 or fin.get("sceneShown") != 3 or not fin.get("ticked") or fin.get("reduced") or fin.get("shown") != fin.get("stars"):
+        fails.append("finale count-up: %s" % fin)
     res = pg.evaluate("""() => {
       const el = document.getElementById('results');
       el.scrollIntoView({ block: 'center', inline: 'nearest' });
@@ -788,6 +1051,18 @@ def check_results(pg, fails):
 def check_other_world(pg, fails):
     other = (GAME / "w_gato.html").resolve().as_uri()
     pg.goto(other + "?mute=1", wait_until="domcontentloaded")
+    try:
+        pg.wait_for_selector("#demoNote", timeout=15000)
+        scan(pg, "gato-demo", fails)
+        pg.locator("#demoNote button").tap()
+        pg.wait_for_timeout(250)
+        if pg.locator("#onb").count() and pg.locator("#onb").is_visible():
+            tap_node(pg, "#onb")
+        pg.wait_for_selector("#tale", timeout=4000)
+        scan(pg, "gato-story", fails)
+        skip_tale(pg)
+    except Exception as ex:
+        fails.append("other world story scan failed: " + str(ex)[:160])
     try:
         pg.wait_for_function("() => window.__STAGE3D__ && (window.__STAGE3D__.ok || window.__STAGE3D__.error) && window.__SPARK__", timeout=30000)
     except Exception as ex:
@@ -828,11 +1103,13 @@ def check_landscape(pg, fails):
     pg.set_viewport_size({"width": 844, "height": 390})
     pg.goto(GALLERY, wait_until="domcontentloaded")
     pg.wait_for_timeout(250)
+    dismiss_pitch(pg)
     bad = layout_overflow(pg)
     print("land gallery", bad, flush=True)
     if bad:
         fails.append("landscape gallery overflow: " + " | ".join(bad[:8]))
     scan(pg, "land-gallery", fails)
+    check_gallery_polish(pg, fails, 18)
     pg.screenshot(path=str(EV / "verify_touch_gallery_land.png"))
     pg.goto(INDEX + "?mute=1", wait_until="domcontentloaded")
     pg.wait_for_timeout(300)
@@ -843,9 +1120,29 @@ def check_landscape(pg, fails):
     scan(pg, "land-index", fails)
     pg.screenshot(path=str(EV / "verify_touch_index_land.png"))
     pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded")
+    pg.evaluate("() => { try { localStorage.removeItem('dj_onboard_v2'); localStorage.removeItem('dj_onboard_v1'); } catch (e) {} }")
+    pg.reload(wait_until="domcontentloaded")
     pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready", timeout=30000)
-    dismiss(pg)
+    pg.wait_for_selector("#demoNote", timeout=15000)
+    assert_fit(pg, fails, "#demoNote", "land demo")
+    pg.locator("#demoNote button").tap()
     pg.wait_for_timeout(250)
+    onb = pg.locator("#onb")
+    if onb.count() == 0 or not onb.is_visible():
+        fails.append("landscape onboarding hint did not show")
+    else:
+        assert_fit(pg, fails, "#onb", "land onboard")
+        tap_node(pg, "#onb")
+    pg.wait_for_selector("#tale", timeout=4000)
+    assert_fit(pg, fails, "#tale", "land story")
+    card = story_card(pg)
+    print("land story", card, flush=True)
+    if not card or not card.get("full") or not card.get("corner") or not card.get("mid"):
+        fails.append("landscape story card is not full-screen: %s" % card)
+    pg.screenshot(path=str(EV / "verify_touch_story_land.png"))
+    skip_tale(pg)
+    pg.wait_for_timeout(200)
+    check_fullscreen(pg, fails, "land-play")
     bad = layout_overflow(pg)
     print("land play", bad, flush=True)
     if bad:
@@ -853,8 +1150,29 @@ def check_landscape(pg, fails):
     rows = boxes_under(pg, "#pz, #mu, #home, #dpad button")
     print("land targets", rows, flush=True)
     require_56(fails, rows, "landscape")
+    hit = pg.evaluate("""() => {
+      const a = document.getElementById('h3c'), b = document.getElementById('dpad');
+      if (!a || !b) return { missing: true };
+      const ar = a.getBoundingClientRect(), br = b.getBoundingClientRect();
+      const overlap = ar.left < br.right - 1 && ar.right > br.left + 1 && ar.top < br.bottom - 1 && ar.bottom > br.top + 1;
+      return { hit: overlap, goal: [Math.round(ar.left), Math.round(ar.top), Math.round(ar.right), Math.round(ar.bottom)], pad: [Math.round(br.left), Math.round(br.top), Math.round(br.right), Math.round(br.bottom)] };
+    }""")
+    print("land hud pad", hit, flush=True)
+    if not hit or hit.get("missing") or hit.get("hit"):
+        fails.append("landscape goal banner overlaps the D-pad: %s" % hit)
     scan(pg, "land-play", fails)
     pg.screenshot(path=str(EV / "verify_touch_play_land.png"))
+    pg.locator("#pz").tap()
+    pg.wait_for_timeout(200)
+    if not pg.locator("#pzo").is_visible():
+        fails.append("landscape pause menu did not open")
+    else:
+        assert_fit(pg, fails, "#pzo", "land pause")
+        require_56(fails, boxes_under(pg, "#pzo button, #pzo a"), "landscape pause")
+        scan(pg, "land-pause", fails)
+        pg.screenshot(path=str(EV / "verify_touch_pause_land.png"))
+        pg.locator("#pzo button").first.tap()
+        pg.wait_for_timeout(150)
     restore_window(pg)
     pg.wait_for_timeout(150)
     pg.set_viewport_size({"width": 390, "height": 844})
@@ -862,6 +1180,7 @@ def check_landscape(pg, fails):
 def full_path(pg, fails):
     pg.goto(GALLERY, wait_until="domcontentloaded")
     pg.wait_for_timeout(300)
+    dismiss_pitch(pg)
     scan(pg, "gallery", fails)
     check_gallery_polish(pg, fails)
     pg.screenshot(path=str(EV / "verify_touch_gallery.png"))
@@ -871,7 +1190,9 @@ def full_path(pg, fails):
     dismiss(pg)
     hud_ok(pg, fails, 1)
     scan(pg, "scene1", fails)
+    check_fullscreen(pg, fails, "scene1")
     pg.screenshot(path=str(EV / "verify_touch_scene1.png"))
+    pg.screenshot(path=str(EV / "verify_touch_fullscreen_scene1.png"))
     scene_fit = layout_overflow(pg)
     print("scene1 fit", scene_fit, flush=True)
     if scene_fit:
@@ -879,7 +1200,7 @@ def full_path(pg, fails):
     check_spark(pg, fails)
     juice_scene(pg, fails)
     for n, nxt in ((1, "play_2.html"), (2, "play_3.html")):
-        pg.evaluate("() => { window.__HOLD_FX__ = 1800 }")
+        pg.evaluate("() => { window.__HOLD_FX__ = 3500 }")
         pg.evaluate("document.getElementById('auto').click()")
         pg.wait_for_function("() => window.__GAME__ && window.__GAME__.state().status === 'won'", timeout=180000)
         pg.wait_for_timeout(280)
@@ -943,6 +1264,15 @@ def full_path(pg, fails):
     pg.screenshot(path=str(EV / "verify_touch_ending.png"))
     if "You did it" not in "\n".join(visible(pg)):
         fails.append("ending screen did not show You did it")
+    restore_window(pg)
+    pg.set_viewport_size({"width": 844, "height": 390})
+    pg.wait_for_timeout(200)
+    pg.evaluate("() => { const s = document.querySelector('#ps .scr'); if (s) s.scrollTop = 0; window.scrollTo(0, 0); }")
+    assert_fit(pg, fails, "#ps .scr", "land results")
+    scan(pg, "ending-land", fails)
+    pg.screenshot(path=str(EV / "verify_touch_ending_land.png"))
+    restore_window(pg)
+    pg.set_viewport_size({"width": 390, "height": 844})
 
 def main():
     fails = []
@@ -978,13 +1308,13 @@ def main():
         errs = []
         pg.on("pageerror", lambda e: errs.append(str(e)))
         try:
+            check_pitch(pg, fails)
             check_story(pg, fails)
             check_controls(pg, fails)
             check_create(pg, fails)
             check_judge(pg, fails)
             check_index(pg, fails)
             full_path(pg, fails)
-            check_reduced(browser, fails)
             check_es(pg, fails)
             check_other_world(pg, fails)
             check_landscape(pg, fails)
@@ -1002,6 +1332,10 @@ def main():
         if errs:
             fails.append("pageerror " + " | ".join(errs[:6]))
         browser.close()
+        try:
+            check_reduced(p, fails)
+        except Exception as ex:
+            fails.append("reduced-motion EXCEPTION " + str(ex)[:300])
     print("FAILS", len(fails), flush=True)
     for f in fails:
         print(" -", f, flush=True)

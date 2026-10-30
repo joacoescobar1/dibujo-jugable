@@ -17,14 +17,15 @@ function boot() {
   const COARSE = (() => { try { return matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } })();
   const REDUCED = (() => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } })();
   const STILL = new URLSearchParams(location.search).get('still') === '1' || REDUCED;
-  let gl; try { gl = new THREE.WebGLRenderer({ antialias: !COARSE, alpha: false, preserveDrawingBuffer: true }); } catch (e) { window.__STAGE3D__ = { error: String(e) }; return; }
+  const PLAYM = !!(window.__BUNDLE__ && window.__BUNDLE__.play && new URLSearchParams(location.search).get('judge') !== '1');
+  let gl; try { gl = new THREE.WebGLRenderer({ antialias: !COARSE, alpha: false, preserveDrawingBuffer: true, powerPreference: COARSE ? 'low-power' : 'default' }); } catch (e) { window.__STAGE3D__ = { error: String(e) }; return; }
   const spec = G.spec, W = spec.grid.w, H = spec.grid.h, ART = window.__ART__ || {};
-  gl.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); gl.shadowMap.enabled = true; gl.shadowMap.type = COARSE ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
+  gl.setPixelRatio(Math.min(devicePixelRatio || 1, (PLAYM && COARSE) ? 1.25 : 2)); gl.shadowMap.enabled = true; gl.shadowMap.type = COARSE ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
   gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.outputColorSpace = THREE.SRGBColorSpace;
   const cv = gl.domElement; cv.id = 'c3d'; cv.style.cssText = 'position:absolute;left:0;top:0;border-radius:12px;pointer-events:none;touch-action:none;z-index:2';
   wrap.insertBefore(cv, c2.nextSibling); c2.style.opacity = '0'; document.body.classList.add('s3d');
   const scene = new THREE.Scene(); scene.background = new THREE.Color('#bfe3ff'); scene.fog = new THREE.Fog('#d8ecff', 16, 40);
-  let SKYM = false; const PLAYM = !!(window.__BUNDLE__ && window.__BUNDLE__.play && new URLSearchParams(location.search).get('judge') !== '1');
+  let SKYM = false;
   const cam = new THREE.PerspectiveCamera(60, 4 / 3, .1, 100);
   // lights: warm key (sun), cool fill, rim
   scene.add(new THREE.HemisphereLight('#ffe8c4', '#3b2a55', .9));
@@ -181,7 +182,10 @@ function boot() {
     vertexShader: 'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader: 'uniform sampler2D tDiffuse;uniform float t,flash,grain;uniform vec3 tint;varying vec2 v;float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+t)*43758.5453);}void main(){vec2 o=(v-.5)*(grain>0.0?0.0025:0.0);vec4 c=vec4(texture2D(tDiffuse,v+o).r,texture2D(tDiffuse,v).g,texture2D(tDiffuse,v-o).b,1.);float d=distance(v,vec2(.5,.45));c.rgb*=smoothstep(.85,.3,d)*.6+.4;c.rgb=mix(c.rgb,c.rgb*vec3(1.05,.98,1.08),.5);c.rgb=mix(c.rgb,c.rgb*tint,.6)+flash*vec3(.55,.3,.08);c.rgb+=(h(v*900.)-.5)*grain;gl_FragColor=c;}' });
   comp.addPass(grade); comp.addPass(new OutputPass());
-  function size() { const r = c2.getBoundingClientRect(), pw = c2.offsetParent ? c2.offsetLeft : 0; cv.style.left = c2.offsetLeft + 'px'; cv.style.top = c2.offsetTop + 'px';
+  function size() {
+    const host = PLAYM ? wrap : c2, r = host.getBoundingClientRect();
+    if (PLAYM) { cv.style.left = '0px'; cv.style.top = '0px'; cv.style.width = '100%'; cv.style.height = '100%'; }
+    else { cv.style.left = c2.offsetLeft + 'px'; cv.style.top = c2.offsetTop + 'px'; }
     const w = Math.max(64, Math.round(r.width)), h = Math.max(48, Math.round(r.height)); if (cv._w !== w || cv._h !== h) { cv._w = w; cv._h = h; gl.setSize(w, h); comp.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix(); } }
   const seen = { st: 'playing', col: 0, px: spec.player.x, py: spec.player.y, ev: 0, got: new Set() }; let WT = null, shake = 0, flash = 0, bloomKick = 0, heroPulse = 0, tintT = new THREE.Color(1, 1, 1), winT = 0;
   const nudge = n => { if (!STILL) shake = Math.max(shake, n); };
@@ -279,7 +283,8 @@ function boot() {
     const D = Math.max(W, H), win = S.status === 'won' ? Math.min(1, (t - winT) / 2) : 0;
     // third-person chase cam (Crash / Dreamlight): low, behind the hero, world fills the frame; win = crane up
     const tx = pp.x, tz = pp.z, br = 1 + Math.sin(t * .4) * .01;
-    cam.position.set(tx * .7 + Math.sin(t * .11) * .15, (3.7 + win * 2.5) * br + Math.sin(t * .23) * .04, tz + 8.4 + win * 1.5);
+    const portrait = PLAYM && (cam.aspect || 1) < .85, back = portrait ? 11.4 : 8.4, camY = (portrait ? 4.8 : 3.7) + win * 2.5;
+    cam.position.set(tx * .7 + Math.sin(t * .11) * .15, camY * br + Math.sin(t * .23) * .04, tz + back + win * 1.5);
     if (!STILL && shake > .005) { cam.position.x += (Math.random() - .5) * shake; cam.position.y += (Math.random() - .5) * shake * .65; shake *= .82; } else shake = 0;
     cam.lookAt(tx * .65, .8 + win * 1.2, tz - 2.6);
     // billboards face camera (yaw only)
