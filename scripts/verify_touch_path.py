@@ -5,8 +5,10 @@ Fails on visible Spanish without ?lang=es (text plus alt, title, and aria-label)
 a VERIFIED claim, or a Home/D-pad that does not work.
 Pass 9: landscape 844x390 fit without scroll (HUD, D-pad, modals, story, results),
 ending star count-up and finale, gallery hover/press and clearer titles.
+Pass 12: fullscreen world, judge phone world fills the screen, rim/soft shadow/bloom,
+particle trail, camera ease, parallax, optional challenge clock, local best time.
 """
-import pathlib, re, sys
+import json, pathlib, re, sys
 from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -619,6 +621,23 @@ def check_judge(pg, fails):
     if bad:
         fails.append("judge name labels still Spanish: " + " | ".join(bad[:8]))
     pg.screenshot(path=str(EV / "verify_touch_judge.png"))
+    box = pg.evaluate("""() => {
+      const w = document.getElementById('wrap');
+      const r = w ? w.getBoundingClientRect() : { height: 0, width: 0, top: 0 };
+      return { h: Math.round(r.height), w: Math.round(r.width), top: Math.round(r.top), vh: innerHeight, vw: innerWidth };
+    }""")
+    print("judge phone wrap", box, flush=True)
+    if not box or box["h"] < max(280, box["vh"] * 0.42):
+        fails.append("judge phone world too short: %s" % box)
+    else:
+        try:
+            pg.wait_for_function("() => [...document.querySelectorAll('#draw img')].some(i => i.naturalWidth >= 8)", timeout=8000)
+        except Exception as ex:
+            fails.append("judge drawing is blank: " + str(ex)[:120])
+        else:
+            draw = pg.evaluate("() => [...document.querySelectorAll('#draw img')].map(i => i.id + ':' + i.naturalWidth)")
+            print("judge drawing", draw, flush=True)
+    pg.screenshot(path=str(EV / "verify_touch_judge_phone.png"))
 
 def check_index(pg, fails):
     pg.goto(INDEX + "?mute=1", wait_until="domcontentloaded")
@@ -713,6 +732,26 @@ def juice_scene(pg, fails):
                 fails.append("dust counter stayed at 0")
             if info["travel"] != 1:
                 fails.append("landing dust should travel when motion is allowed: %s" % info)
+        look = pg.evaluate("""() => {
+          const s = window.__STAGE3D__ || {};
+          const c = document.getElementById('c3d');
+          const r = c ? c.getBoundingClientRect() : { width: 0, height: 0, top: 9, left: 9 };
+          return { trail: s.trail || 0, parallax: s.parallax, camEase: s.camEase, rim: s.rim, shadow: s.shadow, bloom: s.bloom || 0, cw: Math.round(r.width), ch: Math.round(r.height), ct: Math.round(r.top), cl: Math.round(r.left), vw: innerWidth, vh: innerHeight };
+        }""")
+        print("pass12", look, flush=True)
+        if not look or look.get("trail", 0) < 1:
+            fails.append("move did not leave a particle trail: %s" % look)
+        if not look or look.get("parallax") != 1 or look.get("camEase") != 1 or look.get("rim") != 1 or look.get("shadow") != "pcfsoft":
+            fails.append("stage look flags: %s" % look)
+        if not look or (look.get("bloom") or 0) < 0.2:
+            fails.append("bloom glow is off: %s" % look)
+        if look and (look["ct"] > 4 or look["cl"] > 4 or look["cw"] < look["vw"] - 12 or look["ch"] < look["vh"] - 12):
+            fails.append("play canvas is letterboxed: %s" % look)
+        ch = pg.locator("#h3ch").inner_text().strip() if pg.locator("#h3ch").count() else ""
+        print("challenge", ch, flush=True)
+        if not ch.startswith("Challenge") or ES.search(ch):
+            fails.append("optional challenge chip: %r" % ch)
+        pg.screenshot(path=str(EV / "verify_touch_pass12.png"))
         pg.wait_for_timeout(160)
         pg.screenshot(path=str(EV / "verify_touch_dust.png"))
     pg.evaluate("() => window.__GAME__.reset()")
@@ -835,9 +874,10 @@ def check_reduced(p, fails):
         if pg.evaluate("() => window.__STAGE3D__.error || null"):
             fails.append("reduced-motion stage failed: " + str(pg.evaluate("() => window.__STAGE3D__.error")))
         if reach_tale(pg):
-            anim = pg.evaluate("() => getComputedStyle(document.querySelector('#tale .art')).animationName")
+            pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
+            anim = pg.evaluate("() => { const n = document.querySelector('#tale .art'); return n ? getComputedStyle(n).animationName : 'missing'; }")
             print("reduced tale anim", anim, flush=True)
-            if anim and anim != "none":
+            if anim == "missing" or (anim and anim != "none"):
                 fails.append("reduced-motion story art still moves: " + str(anim))
             pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
             pg.screenshot(path=str(EV / "verify_touch_story_reduced.png"), timeout=30000)
@@ -864,6 +904,10 @@ def check_reduced(p, fails):
         print("reduced dust", info, flush=True)
         if info["travel"] != 0:
             fails.append("reduced-motion dust still travels: %s" % info)
+        still = pg.evaluate("() => ({trail: window.__STAGE3D__.trail || 0, parallax: window.__STAGE3D__.parallax, camEase: window.__STAGE3D__.camEase})")
+        print("reduced look", still, flush=True)
+        if still.get("trail") or still.get("parallax") or still.get("camEase"):
+            fails.append("reduced-motion still trails, parallax, or eases the camera: %s" % still)
         pg.screenshot(path=str(EV / "verify_touch_reduced_dust.png"))
         walked = pg.evaluate(COLLECT_JS)
         print("reduced walk", walked, flush=True)
@@ -1042,6 +1086,12 @@ def check_results(pg, fails):
         fails.append("results stars: %s" % res)
     if not re.search(r"Time: \d+:\d\d", text):
         fails.append("results time: %s" % text)
+    if not re.search(r"Best \d+:\d\d", text) or not data.get("best"):
+        fails.append("results best time: %s" % res)
+    best = pg.evaluate("() => window.__BEST__ || null")
+    print("best", best, flush=True)
+    if not best or best.get("time") != data.get("best"):
+        fails.append("local best record: %s vs %s" % (best, data))
     if ES.search(text) or VER.search(text):
         fails.append("results leak: " + text)
     if res and (res["left"] < -1 or res["right"] > res["vw"] + 1 or res["top"] < -1 or res["bottom"] > res["vh"] + 1):
@@ -1274,9 +1324,161 @@ def full_path(pg, fails):
     restore_window(pg)
     pg.set_viewport_size({"width": 390, "height": 844})
 
+def check_viewport_sources(fails):
+    need = ["play.html", "index.html", "gallery.html", "w_gato.html", "w_fishhome.html", "demo.template.html"]
+    for name in need:
+        t = (GAME / name).read_text(errors="replace")[:1500]
+        if 'name="viewport"' not in t or "width=device-width" not in t:
+            fails.append("viewport meta missing width=device-width in " + name)
+
+def check_fish_solver(fails):
+    sys.path.insert(0, str(ROOT / "agent"))
+    from playtest import solve
+    for n in (1, 2, 3):
+        spec = json.loads((ROOT / "samples/kid_02/worlds/v1" / ("scene_%d.json" % n)).read_text())
+        path = solve(spec)
+        print("fish solve", n, None if path is None else len(path), flush=True)
+        if not path:
+            fails.append("fish home scene %s is not solver-green" % n)
+        if len(spec.get("goals") or []) < 3 or len(spec.get("goals") or []) > 5:
+            fails.append("fish home scene %s fish count %s" % (n, len(spec.get("goals") or [])))
+
+def check_fishhome(pg, fails):
+    check_fish_solver(fails)
+    pg.goto(GALLERY, wait_until="domcontentloaded")
+    pg.wait_for_timeout(250)
+    dismiss_pitch(pg)
+    card = pg.evaluate("""() => {
+      const c = document.querySelector('[data-demo="fishhome"]');
+      if (!c) return null;
+      const h = c.querySelector('h2'), p = c.querySelector('p'), s = c.querySelector('small'), a = c.querySelector('a.btn');
+      const link = s && s.querySelector('a');
+      return {
+        title: h ? h.textContent.replace(/\\s+/g, ' ').trim() : '',
+        line: p ? p.textContent.replace(/\\s+/g, ' ').trim() : '',
+        small: s ? s.innerText.replace(/\\s+/g, ' ').trim() : '',
+        href: a ? a.getAttribute('href') : '',
+        link: link ? link.getAttribute('href') : ''
+      };
+    }""")
+    print("fish card", card, flush=True)
+    if not card or card.get("title") != "Fish Home":
+        fails.append("fish home card missing: %s" % card)
+    else:
+        blob = card["title"] + "\n" + card["line"] + "\n" + card["small"]
+        if "Khamkhoune" not in card["small"] or "CC BY-SA 4.0" not in card["small"]:
+            fails.append("fish home credit missing on card: %s" % card["small"])
+        if "creativecommons.org/licenses/by-sa/4.0" not in (card.get("link") or ""):
+            fails.append("fish home license link missing: %s" % card)
+        if card.get("href") != "w_fishhome.html":
+            fails.append("fish home play link: %s" % card.get("href"))
+        if ES.search(blob) or VER.search(blob):
+            fails.append("fish home card leak on English gallery: " + blob)
+    pg.locator('[data-demo="fishhome"]').scroll_into_view_if_needed()
+    pg.screenshot(path=str(EV / "verify_touch_fishhome_gallery.png"))
+    fish = (GAME / "w_fishhome.html").resolve().as_uri()
+    pg.goto(fish + "?mute=1", wait_until="domcontentloaded")
+    if not reach_tale(pg):
+        fails.append("fish home scene 1 story did not open")
+    else:
+        tale = story_card(pg)
+        print("fish story", tale, flush=True)
+        line = (tale or {}).get("line") or ""
+        low = line.lower()
+        if "fish" not in low and "pond" not in low:
+            fails.append("fish home story missing fish or pond: " + line)
+        if ES.search(line) or VER.search(line) or "LEAK" in line:
+            fails.append("fish home story leak: " + line)
+        if (tale or {}).get("art") != "🐟":
+            fails.append("fish home story art: %s" % tale)
+    skip_tale(pg)
+    pg.wait_for_timeout(200)
+    hud_ok(pg, fails, 1)
+    obj = pg.locator("#h3c .obj").inner_text() if pg.locator("#h3c .obj").count() else ""
+    if "fish" not in obj.lower():
+        fails.append("fish home goal does not mention fish: " + obj)
+    check_fullscreen(pg, fails, "fish-scene1")
+    info = pg.evaluate("""() => ({
+      cell: window.__SPARK__ && window.__SPARK__.cell,
+      spark: (window.__STAGE3D__ && window.__STAGE3D__.spark) || 0,
+      credit: (window.__BUNDLE__ && window.__BUNDLE__.credit) || null,
+      calls: window.__BUNDLE__ && window.__BUNDLE__.live_meta_calls
+    })""")
+    print("fish scene1 spark", info, flush=True)
+    if info.get("cell") or info.get("spark"):
+        fails.append("fish home scene 1 shows the bonus star: %s" % info)
+    if (info.get("credit") or {}).get("en") != "Drawing by Khamkhoune, age 11 — CC BY-SA 4.0":
+        fails.append("fish home English credit string: %s" % info.get("credit"))
+    if (info.get("credit") or {}).get("es") != "Dibujo de Khamkhoune, 11 años — CC BY-SA 4.0":
+        fails.append("fish home Spanish credit string: %s" % info.get("credit"))
+    if info.get("calls") not in (0, None):
+        fails.append("fish home live calls: %s" % info.get("calls"))
+    scan(pg, "fish-scene1", fails)
+    pg.screenshot(path=str(EV / "verify_touch_fishhome_scene1.png"))
+    pg.goto(fish + "?lang=es&mute=1", wait_until="domcontentloaded")
+    if not reach_tale(pg):
+        fails.append("fish home Spanish story did not open")
+    else:
+        tale = story_card(pg) or {}
+        print("fish story es", tale, flush=True)
+        line = tale.get("line") or ""
+        if not re.search(r"pez|estanque", line, re.I):
+            fails.append("fish home Spanish story: " + line)
+    skip_tale(pg)
+    pg.wait_for_timeout(200)
+    es_obj = pg.locator("#h3c .obj").inner_text() if pg.locator("#h3c .obj").count() else ""
+    print("fish hud es", es_obj, flush=True)
+    if not re.search(r"peces|pez", es_obj, re.I):
+        fails.append("fish home Spanish goal: " + es_obj)
+    fish3 = (GAME / "w_fishhome_3.html").resolve().as_uri()
+    pg.goto(fish3 + "?go=1&mute=1", wait_until="domcontentloaded")
+    pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready && window.__STAGE3D__ && (window.__STAGE3D__.ok || window.__STAGE3D__.error)", timeout=30000)
+    dismiss(pg)
+    pg.wait_for_timeout(250)
+    roof = pg.evaluate("""() => ({
+      cell: window.__SPARK__ && window.__SPARK__.cell,
+      spark: (window.__STAGE3D__ && window.__STAGE3D__.spark) || 0
+    })""")
+    print("fish roof", roof, flush=True)
+    cell = (roof or {}).get("cell") or {}
+    if cell.get("x") != 10 or cell.get("y") != 1 or not roof.get("spark"):
+        fails.append("bonus star missing on the blue roof: %s" % roof)
+    check_fullscreen(pg, fails, "fish-scene3")
+    scan(pg, "fish-scene3", fails)
+    pg.screenshot(path=str(EV / "verify_touch_fishhome_scene3.png"))
+    pg.evaluate("document.getElementById('auto').click()")
+    try:
+        pg.wait_for_function("() => window.__GAME__ && window.__GAME__.state().status === 'won'", timeout=60000)
+        pg.wait_for_selector("#credit", timeout=20000)
+    except Exception as ex:
+        fails.append("fish home ending did not show credit: " + str(ex)[:160])
+    else:
+        cred = pg.locator("#credit").inner_text()
+        print("fish credit", cred, flush=True)
+        if "Drawing by Khamkhoune, age 11 — CC BY-SA 4.0" not in cred:
+            fails.append("ending credit sentence: " + cred)
+        if "creativecommons.org/licenses/by-sa/4.0" not in (pg.locator("#credit a").get_attribute("href") or ""):
+            fails.append("ending license link missing")
+        scan(pg, "fish-ending", fails)
+        pg.screenshot(path=str(EV / "verify_touch_fishhome_ending.png"))
+    pg.goto(GALLERY + "?lang=es", wait_until="domcontentloaded")
+    pg.wait_for_timeout(250)
+    dismiss_pitch(pg)
+    es_card = pg.evaluate("""() => {
+      const c = document.querySelector('[data-demo="fishhome"]');
+      if (!c) return '';
+      return (c.innerText || '').replace(/\\s+/g, ' ').trim();
+    }""")
+    print("fish card es", es_card, flush=True)
+    if "Dibujo de Khamkhoune, 11 años" not in es_card or "CC BY-SA 4.0" not in es_card:
+        fails.append("Spanish gallery credit missing: " + es_card)
+    if "Los peces vuelven a casa" not in es_card:
+        fails.append("Spanish gallery title missing: " + es_card)
+
 def main():
     fails = []
     sources_video(fails)
+    check_viewport_sources(fails)
     with sync_playwright() as p:
         browser = p.chromium.launch(args=["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"])
         ctx = browser.new_context(
@@ -1317,6 +1519,7 @@ def main():
             full_path(pg, fails)
             check_es(pg, fails)
             check_other_world(pg, fails)
+            check_fishhome(pg, fails)
             check_landscape(pg, fails)
             pg.goto(GALLERY, wait_until="domcontentloaded")
             pg.wait_for_timeout(200)

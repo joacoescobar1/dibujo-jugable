@@ -20,18 +20,22 @@ function boot() {
   const PLAYM = !!(window.__BUNDLE__ && window.__BUNDLE__.play && new URLSearchParams(location.search).get('judge') !== '1');
   let gl; try { gl = new THREE.WebGLRenderer({ antialias: !COARSE, alpha: false, preserveDrawingBuffer: true, powerPreference: COARSE ? 'low-power' : 'default' }); } catch (e) { window.__STAGE3D__ = { error: String(e) }; return; }
   const spec = G.spec, W = spec.grid.w, H = spec.grid.h, ART = window.__ART__ || {};
-  gl.setPixelRatio(Math.min(devicePixelRatio || 1, (PLAYM && COARSE) ? 1.25 : 2)); gl.shadowMap.enabled = true; gl.shadowMap.type = COARSE ? THREE.BasicShadowMap : THREE.PCFSoftShadowMap;
-  gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.05; gl.outputColorSpace = THREE.SRGBColorSpace;
-  const cv = gl.domElement; cv.id = 'c3d'; cv.style.cssText = 'position:absolute;left:0;top:0;border-radius:12px;pointer-events:none;touch-action:none;z-index:2';
+  gl.setPixelRatio(Math.min(devicePixelRatio || 1, (PLAYM && COARSE) ? 1.25 : 2)); gl.shadowMap.enabled = true; gl.shadowMap.type = THREE.PCFSoftShadowMap;
+  gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.12; gl.outputColorSpace = THREE.SRGBColorSpace;
+  const cv = gl.domElement; cv.id = 'c3d'; cv.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;border-radius:0;pointer-events:none;touch-action:none;z-index:2';
   wrap.insertBefore(cv, c2.nextSibling); c2.style.opacity = '0'; document.body.classList.add('s3d');
-  const scene = new THREE.Scene(); scene.background = new THREE.Color('#bfe3ff'); scene.fog = new THREE.Fog('#d8ecff', 16, 40);
+  const scene = new THREE.Scene(); scene.background = new THREE.Color('#8ebfff'); scene.fog = new THREE.Fog('#c9e4ff', 18, 46);
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(90, COARSE ? 16 : 28, COARSE ? 12 : 18), new THREE.MeshBasicMaterial({ color: '#8ebfff', side: THREE.BackSide, fog: false }));
+  scene.add(sky);
   let SKYM = false;
-  const cam = new THREE.PerspectiveCamera(60, 4 / 3, .1, 100);
-  // lights: warm key (sun), cool fill, rim
-  scene.add(new THREE.HemisphereLight('#ffe8c4', '#3b2a55', .9));
-  const key = new THREE.DirectionalLight('#ffd9a0', 2.6); key.position.set(-6, 12, 6); key.castShadow = true; key.shadow.mapSize.set(COARSE ? 512 : 2048, COARSE ? 512 : 2048);
-  Object.assign(key.shadow.camera, { left: -W, right: W, top: H, bottom: -H }); key.shadow.bias = -.0008; key.shadow.radius = COARSE ? 1 : 6; scene.add(key);
-  const rim = new THREE.DirectionalLight('#8fb8ff', 1.1); rim.position.set(6, 5, -8); scene.add(rim);
+  const cam = new THREE.PerspectiveCamera(50, 4 / 3, .1, 120);
+  // lights: warm key, soft fill, cool rim, pink kicker (the fringe that reads on a phone)
+  scene.add(new THREE.HemisphereLight('#fff0d2', '#2a2148', 1.05));
+  const key = new THREE.DirectionalLight('#ffe0b0', 2.85); key.position.set(-7, 14, 8); key.castShadow = true; key.shadow.mapSize.set(COARSE ? 512 : 2048, COARSE ? 512 : 2048);
+  Object.assign(key.shadow.camera, { left: -W, right: W, top: H, bottom: -H, near: .5, far: 40 }); key.shadow.bias = -.0006; key.shadow.normalBias = .02; key.shadow.radius = COARSE ? 4 : 14; scene.add(key);
+  const rim = new THREE.DirectionalLight('#9ec4ff', 1.45); rim.position.set(8, 6, -10); scene.add(rim);
+  const rimPink = new THREE.DirectionalLight('#ff8ad4', .85); rimPink.position.set(-9, 3, -6); scene.add(rimPink);
+  const fill = new THREE.DirectionalLight('#ffd6ea', .62); fill.position.set(5, 2.5, 10); scene.add(fill);
   const tl = new THREE.TextureLoader(), tex = u => { if (!u) return null; const t = tl.load(u); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = COARSE ? 2 : 8; return t; };
   const X = gx => gx + .5 - W / 2, Z = gy => gy + .5 - H / 2;
   // ground = Meta film plate, plus a dark stage apron around it
@@ -59,10 +63,13 @@ function boot() {
     const mp = id && ART['id:' + id] ? (artTex['id:' + id] || (artTex['id:' + id] = tex(ART['id:' + id]))) : roleTex(role);
     const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({ map: mp, transparent: false, alphaTest: .5, side: THREE.DoubleSide, roughness: .55, emissive: '#ffffff', emissiveIntensity: .08 });
     m.emissiveMap = m.map; const q = new THREE.Mesh(new THREE.PlaneGeometry(size, size), m); q.castShadow = true; q.position.y = size / 2; q.customDepthMaterial = new THREE.MeshDepthMaterial({ map: m.map, alphaTest: .35, depthPacking: THREE.RGBADepthPacking });
-    const sh = new THREE.Mesh(new THREE.PlaneGeometry(size * .9, size * .45), new THREE.MeshBasicMaterial({ map: blobT, transparent: true, depthWrite: false })); sh.rotation.x = -Math.PI / 2; sh.position.y = .01;
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(size * 1.25, size * .62), new THREE.MeshBasicMaterial({ map: blobT, transparent: true, depthWrite: false, opacity: .85 })); sh.rotation.x = -Math.PI / 2; sh.position.y = .012;
+    const rimCol = { player: '#9be7ff', goal: '#ffe27a', enemy: '#ff8ad9', npc: '#ffd0ef', door: '#fff1b0', wall: '#d7c4ff' }[role] || '#fff4d2';
+    const rimCard = new THREE.Mesh(new THREE.PlaneGeometry(size * 1.08, size * 1.08), new THREE.MeshBasicMaterial({ color: rimCol, transparent: true, opacity: .42, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, toneMapped: false, fog: false }));
+    rimCard.position.set(0, size / 2, -.06);
     const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowT, color: { player: '#6fe3ff', goal: '#ffd54f', enemy: '#d05cff', npc: '#ffb3e6' }[role] || '#fff', blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: role === 'goal' ? .9 : .45 }));
     halo.scale.setScalar(size * 1.6); halo.position.y = size * .5;
-    g.add(sh, q); halo.position.z = -.4; if (role === 'goal' || role === 'door') g.add(halo); g.userData = { q, halo, role, size };
+    g.add(sh, rimCard, q); halo.position.z = -.4; if (role === 'goal' || role === 'door' || role === 'player') g.add(halo); g.userData = { q, halo, role, size };
     if (name && !PLAYM) { const nm = window.__tr ? window.__tr(name) : name; (window.__LABELS__ = window.__LABELS__ || []).push(nm); const L = new THREE.Sprite(new THREE.SpriteMaterial({ map: label(nm), depthTest: false, transparent: true })); L.scale.set(4.2, .52, 1); L.position.y = size + .35; L.renderOrder = 10; g.add(L); g.userData.L = L; }
     scene.add(g); return g;
   }
@@ -144,8 +151,8 @@ function boot() {
   const hideP = k => { pDummy.position.set(0, -40, 0); pDummy.scale.setScalar(0); pDummy.rotation.set(0, 0, 0); pDummy.updateMatrix(); pMesh.setMatrixAt(k, pDummy.matrix); pMesh.setColorAt(k, pColor.setRGB(0, 0, 0)); };
   for (let k = 0; k < NP; k++) hideP(k);
   pMesh.instanceMatrix.needsUpdate = true;
-  function burst(x, z, n, cols, up = 1, y0 = .7, spread = 1) {
-    if (COARSE) n = Math.max(3, n >> 2);
+  function burst(x, z, n, cols, up = 1, y0 = .7, spread = 1, exact = false) {
+    if (!exact && COARSE) n = Math.max(3, n >> 2);
     if (STILL) n = Math.min(n, 16);
     spawned += n;
     for (let i = 0; i < n; i++) {
@@ -173,20 +180,45 @@ function boot() {
   // ambient pollen motes in the light
   const NM = COARSE ? 36 : 160, mg = new THREE.BufferGeometry(), mp = new Float32Array(NM * 3); for (let i = 0; i < NM; i++) mp.set([(Math.random() - .5) * W * 1.4, Math.random() * 4, (Math.random() - .5) * H * 1.4], i * 3);
   mg.setAttribute('position', new THREE.BufferAttribute(mp, 3)); scene.add(new THREE.Points(mg, new THREE.PointsMaterial({ size: .07, map: glowT, color: '#ffe9a8', transparent: true, opacity: .7, blending: THREE.AdditiveBlending, depthWrite: false })));
+  // distant clouds slide slower than the camera so a tall phone still has a sky
+  const cloudT = ctex((x, w, h) => { x.clearRect(0, 0, w, h); for (let i = 0; i < 6; i++) { const cx = w * (.12 + i * .15), cy = h * (.48 + (i % 3) * .06), r = h * (.28 + (i % 2) * .1); const g = x.createRadialGradient(cx, cy, 4, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 6.283); x.fill(); } }, 512, 220);
+  const para = [];
+  for (let i = 0; i < 4; i++) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(16, 5.4), new THREE.MeshBasicMaterial({ map: cloudT, transparent: true, depthWrite: false, fog: false, opacity: .38 + (i % 2) * .18, side: THREE.DoubleSide }));
+    m.position.set(-12 + i * 8, 6.1 + (i % 2) * 1.35, -7 - i * 1.5); m.frustumCulled = false; scene.add(m);
+    para.push({ m, k: .14 + i * .08, bx: m.position.x, by: m.position.y, bz: m.position.z });
+  }
   // pooled foot rings (fixed draw calls; the moving hero used to allocate a mesh per step)
   const STEP_N = 16, steps = []; let si = 0;
   for (let i = 0; i < STEP_N; i++) { const s = new THREE.Mesh(new THREE.CircleGeometry(.12, 10), new THREE.MeshBasicMaterial({ color: '#6fe3ff', transparent: true, opacity: 0, depthWrite: false })); s.rotation.x = -Math.PI / 2; s.visible = false; scene.add(s); steps.push(s); }
   // post: bloom + vignette/grade
-  const comp = new EffectComposer(gl); comp.addPass(new RenderPass(scene, cam)); const bloom = new UnrealBloomPass(new THREE.Vector2(COARSE ? 256 : 512, COARSE ? 192 : 384), COARSE ? .22 : .55, COARSE ? .35 : .6, COARSE ? .9 : .82); comp.addPass(bloom);
+  const comp = new EffectComposer(gl); comp.addPass(new RenderPass(scene, cam)); const bloom = new UnrealBloomPass(new THREE.Vector2(COARSE ? 256 : 512, COARSE ? 192 : 384), COARSE ? .4 : .64, COARSE ? .42 : .55, COARSE ? .7 : .66); comp.addPass(bloom);
   const grade = new ShaderPass({ uniforms: { tDiffuse: { value: null }, t: { value: 0 }, flash: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) }, grain: { value: COARSE ? 0 : .035 } },
     vertexShader: 'varying vec2 v;void main(){v=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader: 'uniform sampler2D tDiffuse;uniform float t,flash,grain;uniform vec3 tint;varying vec2 v;float h(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+t)*43758.5453);}void main(){vec2 o=(v-.5)*(grain>0.0?0.0025:0.0);vec4 c=vec4(texture2D(tDiffuse,v+o).r,texture2D(tDiffuse,v).g,texture2D(tDiffuse,v-o).b,1.);float d=distance(v,vec2(.5,.45));c.rgb*=smoothstep(.85,.3,d)*.6+.4;c.rgb=mix(c.rgb,c.rgb*vec3(1.05,.98,1.08),.5);c.rgb=mix(c.rgb,c.rgb*tint,.6)+flash*vec3(.55,.3,.08);c.rgb+=(h(v*900.)-.5)*grain;gl_FragColor=c;}' });
   comp.addPass(grade); comp.addPass(new OutputPass());
   function size() {
-    const host = PLAYM ? wrap : c2, r = host.getBoundingClientRect();
-    if (PLAYM) { cv.style.left = '0px'; cv.style.top = '0px'; cv.style.width = '100%'; cv.style.height = '100%'; }
-    else { cv.style.left = c2.offsetLeft + 'px'; cv.style.top = c2.offsetTop + 'px'; }
-    const w = Math.max(64, Math.round(r.width)), h = Math.max(48, Math.round(r.height)); if (cv._w !== w || cv._h !== h) { cv._w = w; cv._h = h; gl.setSize(w, h); comp.setSize(w, h); cam.aspect = w / h; cam.updateProjectionMatrix(); } }
+    const vv = window.visualViewport;
+    const vw = Math.max(64, Math.round((vv && vv.width) || window.innerWidth || 64));
+    const vh = Math.max(48, Math.round((vv && vv.height) || window.innerHeight || 48));
+    const narrow = vw < 860;
+    let w, h;
+    if (PLAYM) {
+      w = vw; h = vh;
+      cv.style.position = 'fixed'; cv.style.left = '0px'; cv.style.top = '0px';
+      cv.style.width = w + 'px'; cv.style.height = h + 'px'; cv.style.maxWidth = 'none'; cv.style.maxHeight = 'none'; cv.style.borderRadius = '0';
+    } else if (narrow && wrap) {
+      const r = wrap.getBoundingClientRect();
+      w = Math.max(64, Math.round(r.width)); h = Math.max(48, Math.round(Math.max(r.height, vh * .46)));
+      cv.style.position = 'absolute'; cv.style.left = '0px'; cv.style.top = '0px'; cv.style.right = 'auto'; cv.style.bottom = 'auto';
+      cv.style.width = w + 'px'; cv.style.height = h + 'px'; cv.style.maxWidth = 'none'; cv.style.maxHeight = 'none';
+    } else {
+      const r = c2.getBoundingClientRect();
+      w = Math.max(64, Math.round(r.width)); h = Math.max(48, Math.round(r.height));
+      cv.style.left = c2.offsetLeft + 'px'; cv.style.top = c2.offsetTop + 'px';
+    }
+    if (cv._w !== w || cv._h !== h) { cv._w = w; cv._h = h; gl.setSize(w, h, false); comp.setSize(w, h); cam.aspect = w / Math.max(1, h); cam.updateProjectionMatrix(); }
+  }
   const seen = { st: 'playing', col: 0, px: spec.player.x, py: spec.player.y, ev: 0, got: new Set() }; let WT = null, shake = 0, flash = 0, bloomKick = 0, heroPulse = 0, tintT = new THREE.Color(1, 1, 1), winT = 0;
   const nudge = n => { if (!STILL) shake = Math.max(shake, n); };
   const pp = new THREE.Vector3(X(spec.player.x), 0, Z(spec.player.y)); let hop = 0, land = 0, dolly = 1.2, idleT = 0, lastMv = 0;
@@ -219,11 +251,22 @@ function boot() {
     }
     window.__STAGE3D__.dustLive = live;
   }
-  function heartBeat(now) { const u = (now % .92) / .92, g = (c, w) => Math.exp(-((u - c) * (u - c)) / (2 * w * w)); return Math.min(1, g(.06, .035) + g(.22, .028) * .65); }
+  // Wide double-thump so a slow phone frame still catches the beat (the old spike was ~35ms).
+  function heartBeat(now) {
+    const u = (now % .92) / .92;
+    const lobe = (c, half, flat) => {
+      let d = Math.abs(u - c); if (d > .5) d = 1 - d;
+      if (d <= flat) return 1; if (d >= half) return 0;
+      return Math.cos(((d - flat) / (half - flat)) * Math.PI * .5);
+    };
+    return Math.min(1, lobe(.12, .22, .08) + lobe(.38, .14, .04) * .72);
+  }
   const juiceLight = new THREE.PointLight('#ffd54f', 0, 7.5, 2); juiceLight.position.set(0, -4, 0); scene.add(juiceLight);
   const hint = new THREE.Mesh(new THREE.ConeGeometry(.35, .7, 4), new THREE.MeshStandardMaterial({ color: '#ffe27a', emissive: '#ffb300', emissiveIntensity: 1.2 })); hint.rotation.x = Math.PI; hint.visible = false; scene.add(hint);
   const hintG = new THREE.Mesh(new THREE.RingGeometry(.55, .8, 32), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending })); hintG.rotation.x = -Math.PI / 2; hintG.visible = false; scene.add(hintG);
-  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED, dust: 0, dustLive: 0, dustTravel: 0, heartbeat: 0, heartbeatMax: 0, doorOpen: false, doorScale: 0, doorScaleMin: null, doorScaleMax: 0, confetti: 0, spark: sparkA ? 1 : 0, sparkOn: sparkA ? 1 : 0, sparkSpin: 0 };
+  const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED, dust: 0, dustLive: 0, dustTravel: 0, heartbeat: 0, heartbeatMax: 0, doorOpen: false, doorScale: 0, doorScaleMin: null, doorScaleMax: 0, confetti: 0, spark: sparkA ? 1 : 0, sparkOn: sparkA ? 1 : 0, sparkSpin: 0, trail: 0, parallax: STILL ? 0 : 1, camEase: STILL ? 0 : 1, rim: 1, shadow: 'pcfsoft' };
+  const camTgt = new THREE.Vector3(), lookTgt = new THREE.Vector3(), camHold = new THREE.Vector3(), lookHold = new THREE.Vector3();
+  let camReady = false;
   // Composer resets the draw-call counter on every pass, so keep the main scene pass.
   let sceneCalls = 0; const renderScene = gl.render.bind(gl);
   gl.render = (s, c) => { renderScene(s, c); if (s === scene) sceneCalls = gl.info.render.calls; };
@@ -242,7 +285,14 @@ function boot() {
       else if (S.status === 'lost') { nudge(.55); if (!STILL) freeze = 4; burst(X(P.x), Z(P.y), 80, ['#ef5350', '#90caf9', '#2b2118']); tintT.set(1.3, .65, .7); } else { if (WT) WT.visible = false; tintT.set(1, 1, 1); steps.forEach(s => { s.visible = false; }); winT = 0; } seen.st = S.status; }
     if (!STILL && Math.random() < (COARSE ? .04 : .1)) burst(pp.x + (Math.random() - .5) * .4, pp.z + .2, 1, ['#ff9ad5', '#ffe27a', '#9be7ff'], .25);
     // actors
+    const trailFromX = player.userData._tx == null ? pp.x : player.userData._tx, trailFromZ = player.userData._tz == null ? pp.z : player.userData._tz;
     pp.lerp(new THREE.Vector3(X(P.x), 0, Z(P.y)), .28); if (hop > .05 && hop * .86 <= .05) { land = 1; ring(pp.x, pp.z); puffDust(pp.x, pp.z); } hop *= .86; land *= .8; player.position.set(pp.x, Math.sin((1 - hop) * Math.PI) * hop * .5, pp.z);
+    if (!STILL && (Math.abs(pp.x - trailFromX) + Math.abs(pp.z - trailFromZ) > .012) && ((t * 12 | 0) !== player.userData._tf)) {
+      player.userData._tf = t * 12 | 0;
+      burst(trailFromX, trailFromZ, COARSE ? 2 : 3, ['#fff6c8', '#ffc2ea', '#b9f3ff'], .22, .32, .32, true);
+      window.__STAGE3D__.trail += COARSE ? 2 : 3;
+    }
+    player.userData._tx = pp.x; player.userData._tz = pp.z;
     const sq = (1 + Math.sin(t * 5) * .04) * (1 - land * .25) * (1 + hop * .15); player.userData.q.scale.set(1 / sq, sq, 1); player.userData.q.rotation.z = Math.sin(t * 2.3) * .05;
     player.userData.q.material.emissiveIntensity = .08 + heroPulse * 2.2; player.userData.q.material.emissive.set(heroPulse > .04 ? '#ffe7a0' : '#ffffff'); heroPulse *= .9; juiceLight.intensity *= .88; if (juiceLight.intensity < .05) juiceLight.intensity = 0;
     if (S.status === 'won') { player.position.y += Math.min(3, (t - winT) * 1.2); player.rotation.y = (t - winT) * 4; }
@@ -278,19 +328,26 @@ function boot() {
     if (P.x !== seen.hx || P.y !== seen.hy) { seen.hx = P.x; seen.hy = P.y; lastMv = t; } idleT = t - lastMv;
     { let tg = null; if (S.status === 'playing' && idleT > 5) { const gl = goals.filter(g => g.visible); if (gl.length) tg = gl.reduce((a, b) => (a.position.distanceTo(pp) < b.position.distanceTo(pp) ? a : b)); else if (doorA && S.doorOpen) tg = doorA; }
       hint.visible = hintG.visible = !!tg; if (tg) { hintG.position.set(tg.position.x, .05, tg.position.z); hintG.scale.setScalar(1.2 + Math.abs(Math.sin(t * 4)) * .6 * (idleT > 10 ? 1.6 : 1)); hintG.material.opacity = .45 + Math.sin(t * 8) * .25; if (!STILL && Math.random() < (COARSE ? .05 : .14)) burst(tg.position.x, tg.position.z, 2, ['#ffe27a', '#fff'], .8); hint.position.set(tg.position.x, 2.6 + Math.abs(Math.sin(t * 4)) * .5, tg.position.z); hint.rotation.y = t * 2; hint.scale.setScalar((idleT > 10 ? 1.6 : 1.2) * (1 + Math.pow(Math.max(0, Math.sin(t * 6)), 6) * .25)); } }
-    dolly *= .97; cam.fov = 60 - dolly * 14 + (S.status === 'won' ? 4 : 0); cam.updateProjectionMatrix();
-    // camera: slow cinematic drift + follow + shake; win = crane up
-    const D = Math.max(W, H), win = S.status === 'won' ? Math.min(1, (t - winT) / 2) : 0;
-    // third-person chase cam (Crash / Dreamlight): low, behind the hero, world fills the frame; win = crane up
-    const tx = pp.x, tz = pp.z, br = 1 + Math.sin(t * .4) * .01;
-    const portrait = PLAYM && (cam.aspect || 1) < .85, back = portrait ? 11.4 : 8.4, camY = (portrait ? 4.8 : 3.7) + win * 2.5;
-    cam.position.set(tx * .7 + Math.sin(t * .11) * .15, camY * br + Math.sin(t * .23) * .04, tz + back + win * 1.5);
+    const win = S.status === 'won' ? Math.min(1, (t - winT) / 2) : 0;
+    const tx = pp.x, tz = pp.z, drift = STILL ? 0 : 1;
+    const portrait = (cam.aspect || 1) < .92;
+    const back = portrait ? 8.2 : 7.4, camY = (portrait ? 3.85 : 3.35) + win * 2.2;
+    const easeIn = STILL ? 1 : Math.min(1, t / .85), ease = easeIn * easeIn * (3 - 2 * easeIn);
+    dolly = STILL ? 0 : dolly * .96;
+    cam.fov = (portrait ? 50 : 46) + (1 - ease) * 12 - dolly * 6 + (S.status === 'won' ? 3 : 0);
+    cam.updateProjectionMatrix();
+    camTgt.set(tx * .5 + Math.sin(t * .11) * .1 * drift, camY + Math.sin(t * .23) * .04 * drift, tz + back + win * 1.15);
+    lookTgt.set(tx * .78, .9 + win * 1.05, tz - .85);
+    if (!camReady || STILL) { camHold.copy(camTgt); lookHold.copy(lookTgt); camReady = true; }
+    else { camHold.lerp(camTgt, .08); lookHold.lerp(lookTgt, .11); }
+    cam.position.copy(camHold);
     if (!STILL && shake > .005) { cam.position.x += (Math.random() - .5) * shake; cam.position.y += (Math.random() - .5) * shake * .65; shake *= .82; } else shake = 0;
-    cam.lookAt(tx * .65, .8 + win * 1.2, tz - 2.6);
+    cam.lookAt(lookHold);
+    if (!STILL) para.forEach(L => { L.m.position.x = L.bx + cam.position.x * L.k; L.m.position.y = L.by + Math.sin(t * .25 + L.k * 8) * .12; L.m.position.z = L.bz + cam.position.z * L.k * .2; });
     // billboards face camera (yaw only)
     scene.traverse(o => { if (o.userData && o.userData.q && !(o === player && S.status === 'won')) o.rotation.y = Math.atan2(cam.position.x - o.position.x, cam.position.z - o.position.z); });
     flash *= .9; grade.uniforms.flash.value = flash; grade.uniforms.t.value = t; grade.uniforms.tint.value.lerp(tintT, .06);
-    const baseB = COARSE ? .2 : .5, baseTh = COARSE ? .9 : .82;
+    const baseB = COARSE ? .36 : .58, baseTh = COARSE ? .7 : .64;
     bloom.strength = baseB + Math.min(1.3, bloomKick + flash * .5) + (S.status === 'won' ? (COARSE ? .15 : .4) : 0);
     bloom.threshold = Math.max(.26, baseTh - bloomKick * .48); bloomKick *= .9;
     if (!STILL && S.status === 'won' && t - winT < 2.5 && Math.random() < (COARSE ? .12 : .4)) burst(pp.x + (Math.random() - .5) * 4, pp.z + (Math.random() - .5) * 2, 8, ['#ff5c8a', '#ffd54f', '#6fe3ff', '#7dffb0', '#c38bff'], 1.6);
@@ -302,6 +359,7 @@ function boot() {
     const hbv = doorA && doorA.userData ? (doorA.userData.hb || 0) : 0, scv = doorA && doorA.userData && doorA.userData.sc ? doorA.userData.sc : 0;
     fx.heartbeat = +hbv.toFixed(3); fx.doorOpen = !!(S && S.doorOpen); fx.doorScale = +scv.toFixed(4); fx.reduced = REDUCED;
     fx.spark = sparkA ? 1 : 0; fx.sparkOn = sparkA && sparkA.visible ? 1 : 0; fx.sparkSpin = (sparkA && !STILL && !(window.__SPARK__ && window.__SPARK__.got)) ? 1 : 0;
+    fx.parallax = STILL ? 0 : (para.length ? 1 : 0); fx.camEase = STILL ? 0 : 1; fx.rim = 1; fx.shadow = 'pcfsoft'; fx.trail = fx.trail || 0;
     if (fx.doorOpen && !STILL && scv) { fx.heartbeatMax = Math.max(fx.heartbeatMax || 0, hbv); fx.doorScaleMin = fx.doorScaleMin == null ? scv : Math.min(fx.doorScaleMin, scv); fx.doorScaleMax = Math.max(fx.doorScaleMax || 0, scv); }
     fx.confetti = WT && WT.userData ? (WT.userData.count || 0) : (fx.confetti || 0);
   }
