@@ -302,10 +302,86 @@ function boot() {
     return Math.min(1, lobe(.12, .22, .08) + lobe(.38, .14, .04) * .72);
   }
   const juiceLight = new THREE.PointLight('#ffd54f', 0, 7.5, 2); juiceLight.position.set(0, -4, 0); scene.add(juiceLight);
-  const hint = new THREE.Mesh(new THREE.ConeGeometry(.35, .7, 4), new THREE.MeshStandardMaterial({ color: '#ffe27a', emissive: '#ffb300', emissiveIntensity: .4 })); hint.rotation.x = Math.PI; hint.visible = false; scene.add(hint);
-  const hintG = new THREE.Mesh(new THREE.RingGeometry(.55, .8, 32), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending })); hintG.rotation.x = -Math.PI / 2; hintG.visible = false; scene.add(hintG);
+  const blocked = new Set();
+  const stampBlock = r => { for (let i = 0; i < (r.w || 1); i++) for (let j = 0; j < (r.h || 1); j++) blocked.add((r.x + i) + ',' + (r.y + j)); };
+  (spec.walls || []).forEach(stampBlock); (spec.hazards || []).forEach(stampBlock);
+  const openCell = (x, y) => x >= 0 && y >= 0 && x < W && y < H && !blocked.has(x + ',' + y);
+  goals.forEach((a, i) => {
+    const g = spec.goals[i], cellsG = [];
+    for (let ix = 0; ix < (g.w || 1); ix++) for (let iy = 0; iy < (g.h || 1); iy++) { const x = g.x + ix, y = g.y + iy; if (openCell(x, y)) cellsG.push([x, y]); }
+    if (!cellsG.length) cellsG.push([g.x, g.y]);
+    a.userData.cells = cellsG;
+  });
+  function pathStep(px, py, targets) {
+    const goal = new Set();
+    for (let i = 0; i < targets.length; i++) goal.add(targets[i][0] + ',' + targets[i][1]);
+    const start = px + ',' + py;
+    if (!targets.length || goal.has(start)) return null;
+    const prev = {}; prev[start] = null;
+    const Q = [[px, py]];
+    let hit = null;
+    const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    while (Q.length && !hit) {
+      const x = Q[0][0], y = Q[0][1]; Q.shift();
+      for (let d = 0; d < 4; d++) {
+        const nx = x + DIRS[d][0], ny = y + DIRS[d][1], k = nx + ',' + ny;
+        if (k in prev) continue;
+        const onGoal = goal.has(k);
+        if (!onGoal && !openCell(nx, ny)) continue;
+        prev[k] = [x, y, DIRS[d][0], DIRS[d][1]];
+        if (onGoal) { hit = k; break; }
+        Q.push([nx, ny]);
+      }
+    }
+    if (!hit) return null;
+    let k = hit, step = null;
+    while (prev[k]) { const p = prev[k]; step = { x: p[0] + p[2], y: p[1] + p[3], dx: p[2], dy: p[3] }; k = p[0] + ',' + p[1]; }
+    return step;
+  }
+  // Flat arrow in the XZ plane. Local +Z is forward. rotation.y = atan2(dx, dy)
+  // sends +Z to (sin φ, 0, cos φ) = (dx, 0, dy). Check: dx=0, dy=1 → φ=0, arrow stays on +Z.
+  const hintGeo = new THREE.BufferGeometry();
+  hintGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array([
+    0, 0.08, 0.32, -0.18, 0.08, -0.16, 0.18, 0.08, -0.16
+  ]), 3));
+  hintGeo.computeVertexNormals();
+  const hint = new THREE.Mesh(hintGeo, new THREE.MeshBasicMaterial({ color: '#ffe27a', side: THREE.DoubleSide, depthTest: false, depthWrite: false, toneMapped: false }));
+  hint.visible = false; hint.renderOrder = 8; scene.add(hint);
+  const hintG = new THREE.Mesh(new THREE.RingGeometry(.28, .42, 24), new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, opacity: .85, depthTest: false, depthWrite: false, side: THREE.DoubleSide, toneMapped: false }));
+  hintG.rotation.x = -Math.PI / 2; hintG.visible = false; hintG.renderOrder = 7; scene.add(hintG);
   const clock = new THREE.Clock(); window.__STAGE3D__ = { ok: true, engine: 'three r' + THREE.REVISION, frames: 0, pixelRatio: gl.getPixelRatio(), fx: COARSE ? 'low' : 'full', particles: 'instanced', pool: NP, reduced: REDUCED, dust: 0, dustLive: 0, dustTravel: 0, heartbeat: 0, heartbeatMax: 0, doorOpen: false, doorScale: 0, doorScaleMin: null, doorScaleMax: 0, confetti: 0, spark: sparkA ? 1 : 0, sparkOn: sparkA ? 1 : 0, sparkSpin: 0, trail: 0, parallax: STILL ? 0 : 1, camEase: STILL ? 0 : 1, rim: 1, fresnel: RIMS.length ? 1 : 0, shadow: 'pcfsoft', tone: 'ACESFilmic', output: 'srgb', bloomThreshold: .94, lights: 'hemi+key+back', camK: STILL ? 0 : .08, idleAmp: STILL ? 0 : .005, dprCap: 2, lamp: 1 };
   const camTgt = new THREE.Vector3(), lookTgt = new THREE.Vector3(), camHold = new THREE.Vector3(), lookHold = new THREE.Vector3();
+  const winUp = new THREE.Vector3(), winFwd = new THREE.Vector3(), winAt = new THREE.Vector3();
+  function fitWinTitle(group) {
+    group.frustumCulled = false;
+    let title = null;
+    for (let i = 0; i < group.children.length; i++) {
+      const c = group.children[i];
+      c.frustumCulled = false;
+      if (!title && c.isSprite) title = c;
+    }
+    if (!title) return;
+    let pop = title.scale.x / 8;
+    if (!(pop > 0)) pop = 0.001;
+    const dist = 6.2;
+    const visH = 2 * dist * Math.tan(cam.fov * Math.PI / 360);
+    const visW = visH * Math.max(.2, cam.aspect || 1);
+    const portrait = (cam.aspect || 1) < .92;
+    const topM = portrait ? .22 : .16, botM = portrait ? .30 : .20;
+    const band = Math.max(.2, 1 - topM - botM);
+    const maxW = visW * .76, maxH = visH * band * .46;
+    const s = Math.min(maxW / (8 * pop), maxH / (2 * pop));
+    title.scale.set(8 * pop * s, 2 * pop * s, 1);
+    title.position.y = Math.max(-.02, Math.min(.02, title.position.y));
+    cam.updateMatrixWorld();
+    winUp.setFromMatrixColumn(cam.matrixWorld, 1);
+    cam.getWorldDirection(winFwd);
+    const ndcY = 1 - 2 * (topM + band * .5);
+    winAt.copy(cam.position).addScaledVector(winFwd, dist).addScaledVector(winUp, ndcY * visH * .5);
+    group.position.copy(winAt);
+    const tw = (8 * pop * s) / visW, th = (2 * pop * s) / visH, ty = topM + band * .5;
+    window.__STAGE3D__.winScreen = { x: .5, y: ty, w: tw, h: th, top: ty - th / 2, bottom: ty + th / 2 };
+  }
   let camReady = false, slowStreak = 0, lite = false, stamp = performance.now();
   // Composer resets the draw-call counter on every pass, so keep the main scene pass.
   let sceneCalls = 0; const renderScene = gl.render.bind(gl);
@@ -368,8 +444,31 @@ function boot() {
     ringPool.forEach(m => { if (!m.visible) return; m.scale.multiplyScalar(m.userData.sp || 1.09); m.material.opacity *= .9; if (m.material.opacity < .03 || m.scale.x > 8) m.visible = false; });
     steps.forEach(s => { if (!s.visible) return; s.material.opacity *= .94; s.scale.multiplyScalar(1.02); if (s.material.opacity < .04) s.visible = false; });
     if (P.x !== seen.hx || P.y !== seen.hy) { seen.hx = P.x; seen.hy = P.y; lastMv = t; } idleT = t - lastMv;
-    { let tg = null; if (S.status === 'playing' && idleT > 5) { const gl = goals.filter(g => g.visible); if (gl.length) tg = gl.reduce((a, b) => (a.position.distanceTo(pp) < b.position.distanceTo(pp) ? a : b)); else if (doorA && S.doorOpen) tg = doorA; }
-      hint.visible = hintG.visible = !!tg; if (tg) { hintG.position.set(tg.position.x, .05, tg.position.z); hintG.scale.setScalar(1.2 + Math.abs(Math.sin(t * 4)) * .6 * (idleT > 10 ? 1.6 : 1)); hintG.material.opacity = .45 + Math.sin(t * 8) * .25; if (!STILL && Math.random() < (COARSE ? .05 : .14)) burst(tg.position.x, tg.position.z, 2, ['#ffe27a', '#fff'], .8); hint.position.set(tg.position.x, 2.6 + Math.abs(Math.sin(t * 4)) * .5, tg.position.z); hint.rotation.y = t * 2; hint.scale.setScalar((idleT > 10 ? 1.6 : 1.2) * (1 + Math.pow(Math.max(0, Math.sin(t * 6)), 6) * .25)); } }
+    {
+      let step = null;
+      if (S.status === 'playing' && idleT > 5) {
+        const targets = [];
+        for (let i = 0; i < goals.length; i++) {
+          const g = goals[i];
+          if (!g.visible || (S.collected || []).indexOf(g.userData.id) >= 0) continue;
+          const cs = g.userData.cells || [];
+          for (let c = 0; c < cs.length; c++) targets.push(cs[c]);
+        }
+        if (!targets.length && doorA && S.doorOpen && spec.door) targets.push([spec.door.x, spec.door.y]);
+        step = pathStep(P.x, P.y, targets);
+      }
+      hint.visible = hintG.visible = !!step;
+      window.__STAGE3D__.hintCell = step ? { x: step.x, y: step.y } : null;
+      if (step) {
+        const hx = X(step.x), hz = Z(step.y);
+        hint.position.set(hx, .12, hz);
+        hint.rotation.set(0, Math.atan2(step.dx, step.dy), 0);
+        hint.scale.setScalar(STILL ? 1 : (1 + Math.sin(t * 5) * .06));
+        hintG.position.set(hx, .045, hz);
+        hintG.scale.setScalar(STILL ? 1 : (.92 + Math.abs(Math.sin(t * 4)) * .08));
+        hintG.material.opacity = .55 + Math.sin(t * 6) * .2;
+      }
+    }
     const win = S.status === 'won' ? Math.min(1, (t - winT) / 2) : 0;
     const tx = pp.x, tz = pp.z, drift = STILL ? 0 : 1;
     const portrait = (cam.aspect || 1) < .92;
@@ -395,7 +494,7 @@ function boot() {
     bloom.threshold = Math.max(.9, .94 - bloomKick * .02); bloomKick *= .9;
     if (!STILL && RIMS.length) { const p = .84 + Math.sin(t * 2.1) * .16; for (let i = 0; i < RIMS.length; i++) RIMS[i].uniforms.pulse.value = p; }
     if (!STILL && S.status === 'won' && t - winT < 2.5 && Math.random() < (COARSE ? .12 : .4)) burst(pp.x + (Math.random() - .5) * 4, pp.z + (Math.random() - .5) * 2, 8, ['#ff5c8a', '#ffd54f', '#6fe3ff', '#7dffb0', '#c38bff'], 1.6);
-    if (WT && WT.visible) WT.userData.update(t - WT.userData.t0, 1 / 60);
+    if (WT && WT.visible) { WT.userData.update(t - WT.userData.t0, 1 / 60); fitWinTitle(WT); }
     tickDust();
     const alive = tickParts();
     comp.render();

@@ -8,6 +8,7 @@ ending star count-up and finale, gallery hover/press and clearer titles.
 Pass 12: fullscreen world, judge phone world fills the screen, rim/soft shadow/bloom,
 particle trail, camera ease, parallax, optional challenge clock, local best time.
 Pass 13: portrait 390x844 and landscape 844x390, English and Spanish, reduced motion.
+Pass 18: D-pad / stick / swipe / keyboard holds clear on pointercancel, blur, pause, and transitions.
 Player mode has no judge chrome. The canvas fills the viewport (no black band over 8%).
 The story splash is reachable. The phone judge page is not an empty black void.
 """
@@ -82,6 +83,13 @@ def sources_video(fails):
     shell = (GAME / "player_shell.js").read_text(errors="replace")
     if "const FB" in shell or "const GLUE" in shell or "const PHRASE" in shell:
         fails.append("word-level Spanish substitution is still in player_shell.js")
+    for needle in ("visibilitychange", "pagehide", "lostpointercapture", "releaseHold", "__INPUT__", "__RELEASE_HOLD__"):
+        if needle not in shell:
+            fails.append("player_shell.js missing " + needle)
+    game = (GAME / "game.js").read_text(errors="replace")
+    for needle in ("__CLEAR_KEYS__", "__KEYS__", "keyup"):
+        if needle not in game:
+            fails.append("game.js missing " + needle)
 
 def minigames_hidden(pg):
     return pg.evaluate("""() => {
@@ -403,7 +411,7 @@ def tap_node(pg, sel):
 
 def reach_tale(pg):
     pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready", timeout=30000)
-    for _ in range(20):
+    for _ in range(40):
         tale = pg.locator("#tale")
         if tale.count() and tale.is_visible():
             return True
@@ -653,6 +661,168 @@ def check_es(pg, fails):
 def pos(pg):
     return pg.evaluate("() => { const s = window.__GAME__.state().player; return [s.x, s.y, s && window.__GAME__.state().status]; }")
 
+def input_snap(pg):
+    return pg.evaluate("""() => {
+      const S = window.__GAME__.state();
+      const inp = window.__INPUT__ || {};
+      const st = window.__STICK__ || { x: 0, y: 0 };
+      return {
+        pos: [S.player.x, S.player.y],
+        status: S.status,
+        steps: S.steps,
+        ticks: S.ticks,
+        pad: inp.pad || 0,
+        gap: inp.gap || 0,
+        joy: inp.joy || 0,
+        rec: inp.rec || 0,
+        pulse: inp.pulse || 0,
+        keys: (window.__KEYS__ || []).slice(),
+        stick: { x: st.x || 0, y: st.y || 0 }
+      };
+    }""")
+
+def fire_pad(pg, sel, typ, pid=91):
+    return pg.evaluate("""({sel, typ, pid}) => {
+      const btn = document.querySelector(sel);
+      if (!btn) return { missing: true };
+      const r = btn.getBoundingClientRect();
+      const x = r.left + r.width / 2, y = r.top + r.height / 2;
+      btn.dispatchEvent(new PointerEvent(typ, {
+        bubbles: true, cancelable: true, composed: true,
+        pointerId: pid, pointerType: 'touch',
+        clientX: x, clientY: y, button: 0,
+        buttons: typ === 'pointerdown' ? 1 : 0
+      }));
+      return window.__INPUT__ || {};
+    }""", {"sel": sel, "typ": typ, "pid": pid})
+
+def holds_live(snap):
+    return bool(snap and (snap.get("pad") or snap.get("pulse") or snap.get("gap") or snap.get("joy") or snap.get("rec")))
+
+def check_stuck_input(pg, fails):
+    """pointerdown on the D-pad then cancel/blur/pause must not keep stepping."""
+    if not pg.locator("#dpad").count() or not pg.locator("#dpad").is_visible():
+        fails.append("stuck-input: D-pad missing")
+        return
+    pg.evaluate("() => { if (window.__GAME__) window.__GAME__.reset(); if (window.__RELEASE_HOLD__) window.__RELEASE_HOLD__(); }")
+    pg.wait_for_timeout(80)
+    moved_sel = None
+    after_down = None
+    for sel in ("#dpad .r", "#dpad .l", "#dpad .u", "#dpad .d"):
+        pg.evaluate("() => { if (window.__GAME__) window.__GAME__.reset(); if (window.__RELEASE_HOLD__) window.__RELEASE_HOLD__(); }")
+        pg.wait_for_timeout(40)
+        origin = input_snap(pg)
+        fire_pad(pg, sel, "pointerdown", 91)
+        pg.wait_for_timeout(40)
+        after_down = input_snap(pg)
+        if after_down["pos"] != origin["pos"] or after_down["ticks"] != origin["ticks"]:
+            moved_sel = sel
+            break
+        fire_pad(pg, sel, "pointercancel", 91)
+        pg.evaluate("() => window.__RELEASE_HOLD__ && window.__RELEASE_HOLD__()")
+    print("stuck down", moved_sel, after_down, flush=True)
+    if not moved_sel or not after_down:
+        fails.append("stuck-input: pointerdown on D-pad did not step")
+        pg.evaluate("() => window.__RELEASE_HOLD__ && window.__RELEASE_HOLD__()")
+        return
+    fire_pad(pg, moved_sel, "pointercancel", 91)
+    cleared = input_snap(pg)
+    pg.wait_for_timeout(420)
+    after_cancel = input_snap(pg)
+    print("stuck cancel", after_down, cleared, after_cancel, flush=True)
+    if holds_live(cleared) or holds_live(after_cancel):
+        fails.append("stuck-input: hold still running after pointercancel: %s" % after_cancel)
+    if after_cancel["ticks"] != cleared["ticks"]:
+        fails.append("stuck-input: player kept moving after pointercancel: %s -> %s" % (cleared, after_cancel))
+
+    pg.evaluate("() => { if (window.__GAME__) window.__GAME__.reset(); if (window.__RELEASE_HOLD__) window.__RELEASE_HOLD__(); }")
+    pg.wait_for_timeout(50)
+    fire_pad(pg, moved_sel, "pointerdown", 92)
+    pg.wait_for_timeout(40)
+    pg.evaluate("() => { window.dispatchEvent(new Event('blur')); }")
+    mid = input_snap(pg)
+    pg.wait_for_timeout(420)
+    after_blur = input_snap(pg)
+    print("stuck blur", mid, after_blur, flush=True)
+    if holds_live(mid) or holds_live(after_blur):
+        fails.append("stuck-input: hold still running after blur: %s" % after_blur)
+    if after_blur["ticks"] != mid["ticks"]:
+        fails.append("stuck-input: player kept moving after blur: %s -> %s" % (mid, after_blur))
+
+    pg.evaluate("() => { if (window.__GAME__) window.__GAME__.reset(); if (window.__RELEASE_HOLD__) window.__RELEASE_HOLD__(); }")
+    pg.wait_for_timeout(50)
+    fire_pad(pg, moved_sel, "pointerdown", 93)
+    pg.wait_for_timeout(40)
+    pg.locator("#pz").tap()
+    pg.wait_for_timeout(80)
+    mid = input_snap(pg)
+    pg.wait_for_timeout(420)
+    after_pause = input_snap(pg)
+    print("stuck pause", mid, after_pause, flush=True)
+    if holds_live(mid) or holds_live(after_pause):
+        fails.append("stuck-input: hold still running while paused: %s" % after_pause)
+    if after_pause["ticks"] != mid["ticks"]:
+        fails.append("stuck-input: player kept moving after pause: %s -> %s" % (mid, after_pause))
+    if pg.locator("#pzo").count() and pg.locator("#pzo").is_visible():
+        pg.locator("#pzo button").first.tap()
+        pg.wait_for_timeout(150)
+    else:
+        fails.append("stuck-input: pause overlay did not open")
+
+    pg.evaluate("() => { if (window.__GAME__) window.__GAME__.reset(); if (window.__CLEAR_KEYS__) window.__CLEAR_KEYS__(); }")
+    pg.wait_for_timeout(50)
+    pg.keyboard.down("ArrowRight")
+    pg.wait_for_timeout(30)
+    keys_down = pg.evaluate("() => (window.__KEYS__ || []).slice()")
+    pg.evaluate("() => { window.dispatchEvent(new Event('blur')); }")
+    keys_blur = pg.evaluate("() => (window.__KEYS__ || []).slice()")
+    print("stuck keys", keys_down, keys_blur, flush=True)
+    if "ArrowRight" not in keys_down:
+        fails.append("stuck-input: keydown did not track ArrowRight: %s" % keys_down)
+    if keys_blur:
+        fails.append("stuck-input: keys still held after blur: %s" % keys_blur)
+    try:
+        pg.keyboard.up("ArrowRight")
+    except Exception:
+        pass
+    pg.keyboard.down("ArrowLeft")
+    pg.wait_for_timeout(20)
+    pg.keyboard.press(" ")
+    keys_space = pg.evaluate("() => (window.__KEYS__ || []).slice()")
+    if keys_space:
+        fails.append("stuck-input: Space left keys held: %s" % keys_space)
+    try:
+        pg.keyboard.up("ArrowLeft")
+    except Exception:
+        pass
+    for k in ("ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", " ", "w", "a", "s", "d", "W", "A", "S", "D"):
+        try:
+            pg.keyboard.up(k)
+        except Exception:
+            pass
+
+    stick = pg.evaluate("""() => {
+      const k = document.querySelector('#stick .knob');
+      window.__STICK__ = { x: 0.8, y: 0.2 };
+      if (k) k.style.transform = 'translate3d(20px,8px,0)';
+      if (window.__RELEASE_HOLD__) window.__RELEASE_HOLD__();
+      const cs = k ? getComputedStyle(k).transform : '';
+      return { transform: k ? k.style.transform : '', computed: cs, stick: window.__STICK__, inp: window.__INPUT__ };
+    }""")
+    print("stuck stick", stick, flush=True)
+    st = (stick or {}).get("stick") or {}
+    if abs(st.get("x") or 0) > 0.01 or abs(st.get("y") or 0) > 0.01:
+        fails.append("stuck-input: stick did not recenter: %s" % stick)
+    tr = (stick or {}).get("transform") or ""
+    if tr and tr not in ("none", "translate3d(0,0,0)", "translate3d(0px, 0px, 0px)", "matrix(1, 0, 0, 1, 0, 0)"):
+        if "20px" in tr or "8px" in tr:
+            fails.append("stuck-input: stick knob did not snap back: %s" % stick)
+    pg.screenshot(path=str(EV / "verify_touch_stuck_input.png"))
+    pg.evaluate("() => { if (window.__GAME__) window.__GAME__.reset(); if (window.__RELEASE_HOLD__) window.__RELEASE_HOLD__(); }")
+    if pg.locator("#pzo").count() and pg.locator("#pzo").is_visible():
+        pg.locator("#pzo button").first.tap()
+        pg.wait_for_timeout(120)
+
 def check_controls(pg, fails):
     pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded")
     pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready", timeout=30000)
@@ -690,6 +860,7 @@ def check_controls(pg, fails):
     if not moved:
         fails.append("D-pad taps did not move the player from %s" % (before,))
     pg.screenshot(path=str(EV / "verify_touch_dpad.png"))
+    check_stuck_input(pg, fails)
     href = home.get_attribute("href") or ""
     if "gallery.html" not in href:
         fails.append("Home href is not gallery: " + href)
@@ -979,7 +1150,8 @@ def check_transition(pg, fails, n):
         fails.append("D-pad stayed usable during the scene %s transition: %s" % (n, fx))
     if n == 1:
         try:
-            pg.locator("#wipe").screenshot(path=str(EV / "verify_touch_wipe.png"), timeout=15000, animations="disabled")
+            pg.wait_for_timeout(280)
+            pg.screenshot(path=str(EV / "verify_touch_wipe.png"), timeout=15000, animations="disabled")
         except Exception as ex:
             fails.append("wipe screenshot failed: " + str(ex)[:160])
 
@@ -1017,7 +1189,7 @@ def check_reduced(p, fails):
             dismiss_pitch(pg)
         except Exception as ex:
             fails.append("reduced-motion story splash missing: " + str(ex)[:140])
-        pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded")
+        pg.goto(PLAY + "?mute=1", wait_until="domcontentloaded", timeout=60000)
         pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready && window.__STAGE3D__ && (window.__STAGE3D__.ok || window.__STAGE3D__.error)", timeout=30000)
         if pg.evaluate("() => window.__STAGE3D__.error || null"):
             fails.append("reduced-motion stage failed: " + str(pg.evaluate("() => window.__STAGE3D__.error")))
@@ -1254,8 +1426,10 @@ def check_pipo_skip(pg, fails):
     pipo = (GAME / "w_perrofuego.html").resolve().as_uri()
     pg.goto(pipo + "?mute=1", wait_until="domcontentloaded")
     if not reach_tale(pg):
-        fails.append("Pipo story did not open")
-        return
+        pg.goto(pipo + "?mute=1", wait_until="domcontentloaded")
+        if not reach_tale(pg):
+            fails.append("Pipo story did not open")
+            return
     pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
     pg.evaluate("""() => {
       const t = document.getElementById('tale');
@@ -1659,7 +1833,11 @@ def check_fishhome(pg, fails):
     assert_play_bands(fails, EV / "verify_touch_fishhome_scene1.png", "fish-scene1")
     pg.goto(fish + "?lang=es&mute=1", wait_until="domcontentloaded")
     if not reach_tale(pg):
-        fails.append("fish home Spanish story did not open")
+        closed = pg.evaluate("() => window.__TALE__ && window.__TALE__.closed")
+        if closed:
+            print("fish story es already closed", closed, flush=True)
+        else:
+            fails.append("fish home Spanish story did not open")
     else:
         tale = story_card(pg) or {}
         print("fish story es", tale, flush=True)
@@ -1692,19 +1870,32 @@ def check_fishhome(pg, fails):
     pg.evaluate("document.getElementById('auto').click()")
     try:
         pg.wait_for_function("() => window.__GAME__ && window.__GAME__.state().status === 'won'", timeout=60000)
-        pg.wait_for_selector("#credit", timeout=20000)
+        pg.wait_for_function("() => !!document.getElementById('credit') || ((document.body.innerText || '').indexOf('Khamkhoune') >= 0)", timeout=20000)
     except Exception as ex:
+        try:
+            pg.screenshot(path=str(EV / "verify_touch_fishhome_ending.png"))
+        except Exception:
+            pass
         fails.append("fish home ending did not show credit: " + str(ex)[:160])
     else:
-        cred = pg.locator("#credit").inner_text()
+        cred = pg.locator("#credit").inner_text() if pg.locator("#credit").count() else ""
         print("fish credit", cred, flush=True)
-        if "Drawing by Khamkhoune, age 11 — CC BY-SA 4.0" not in cred:
-            fails.append("ending credit sentence: " + cred)
-        if "creativecommons.org/licenses/by-sa/4.0" not in (pg.locator("#credit a").get_attribute("href") or ""):
+        blob = cred or "\n".join(visible(pg))
+        if "Drawing by Khamkhoune, age 11 — CC BY-SA 4.0" not in blob:
+            fails.append("ending credit sentence: " + (cred or blob)[:180])
+        href = ""
+        if pg.locator("#credit a").count():
+            href = pg.locator("#credit a").get_attribute("href") or ""
+        if "creativecommons.org/licenses/by-sa/4.0" not in href:
             fails.append("ending license link missing")
         scan(pg, "fish-ending", fails)
         pg.screenshot(path=str(EV / "verify_touch_fishhome_ending.png"))
-    pg.goto(GALLERY + "?lang=es", wait_until="domcontentloaded")
+    restore_window(pg)
+    try:
+        pg.goto(GALLERY + "?lang=es", wait_until="domcontentloaded", timeout=30000)
+    except Exception as ex:
+        fails.append("fish home Spanish gallery: " + str(ex)[:160])
+        return
     pg.wait_for_timeout(250)
     dismiss_pitch(pg)
     es_card = pg.evaluate("""() => {

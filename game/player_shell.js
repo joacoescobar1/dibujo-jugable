@@ -281,7 +281,7 @@ body.transitioning #wipe{pointer-events:auto}
 #hud3 .pill{background:#120818cc;backdrop-filter:blur(8px);padding:4px 10px;font-size:13px;line-height:1.2;border-radius:999px;box-shadow:0 0 0 1px #ffd27a99;letter-spacing:0}
 #h3c{color:#fffaf2;letter-spacing:.01em;background:#120818cc;padding:5px 10px 6px;font:800 clamp(13px,3.4vw,16px)/1.2 system-ui,"Segoe UI","Helvetica Neue",sans-serif;border-radius:12px;border-left:4px solid #ffd27a;box-shadow:0 4px 14px #0006,0 0 0 1px #ffffff22;display:flex;flex-wrap:wrap;align-items:center;column-gap:6px;row-gap:0;max-width:min(96vw,520px);flex:1 1 auto;min-width:0;text-wrap:balance}#pz,#mu{position:fixed;top:calc(8px + env(safe-area-inset-top));z-index:42;width:56px;height:56px;min-width:56px;min-height:56px;border-radius:50%;border:0;font-size:24px;background:#120818cc;color:#fff;cursor:pointer;box-shadow:0 0 0 2px #ffd27a99;touch-action:manipulation;backdrop-filter:blur(8px)}#pz{right:calc(8px + env(safe-area-inset-right))}#mu{right:calc(72px + env(safe-area-inset-right))!important;top:calc(8px + env(safe-area-inset-top))!important}#pzo{position:fixed;inset:0;z-index:95;background:#07050fcc;backdrop-filter:blur(8px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#fff;font:900 clamp(36px,9vw,56px) 'Comic Sans MS',cursive;padding:calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));text-align:center}#pzo.on{display:flex}#pzo button{font:800 clamp(18px,4.5vw,28px) 'Comic Sans MS',cursive;padding:16px 28px;min-height:64px;border:0;border-radius:999px;background:linear-gradient(180deg,#ffe27a,#ff9f1c);box-shadow:0 8px 0 #b35c00;cursor:pointer}#skip{position:fixed;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));z-index:70;font:800 20px 'Comic Sans MS',cursive;padding:14px 22px;min-height:56px;border:0;border-radius:999px;background:#ffffff22;color:#fff;cursor:pointer;box-shadow:0 0 0 2px #ffffff55 inset}#tale{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));z-index:45;max-width:min(88vw,640px);background:#120818f6;color:#fffaf2;padding:14px 22px 16px;border-radius:18px;border-left:5px solid #ffd27a;font:800 clamp(20px,4.8vw,32px)/1.28 system-ui,"Segoe UI","Helvetica Neue",sans-serif;text-align:center;box-shadow:0 18px 50px #000c,0 0 0 1px #ffffff22;opacity:0;transform:translateX(-50%) translateY(16px);transition:opacity .28s ease,transform .32s cubic-bezier(.16,1,.3,1)}#tale.in{opacity:1;transform:translateX(-50%) translateY(0)}#tale.out{opacity:0;transform:translateX(-50%) translateY(12px)}#tale .kicker{display:block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#ffd27a;margin-bottom:4px}#tale .hint{font-size:14px;font-weight:650;opacity:.75;margin-top:8px}#jt{position:fixed;right:calc(12px + env(safe-area-inset-right));top:calc(90px + env(safe-area-inset-top));bottom:auto;z-index:41;color:#ffffff55;font:12px sans-serif;text-decoration:none;padding:8px}
 #ps .duo{display:flex;gap:22px;align-items:center}#ps .duo img{width:min(36vw,440px);border-radius:20px;box-shadow:0 20px 60px #000}#ps .duo b{font-size:60px}
-body.play #ov{background:none!important}body.play #ov #ovt,body.play #ov small{opacity:0}
+body.play #ov,body.play #ov.won,body.play #ov.lost{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;animation:none!important;box-shadow:none!important;background:none!important}body.play #h3c.in,body.play #h3c.out{animation:none!important;transform:none!important;opacity:1!important}
 #dpad{position:fixed;z-index:46;left:auto;right:calc(10px + env(safe-area-inset-right));bottom:calc(10px + env(safe-area-inset-bottom));width:248px;height:248px;display:grid;grid-template-columns:76px 76px 76px;grid-template-rows:76px 76px 76px;gap:10px;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;background:none}
 #dpad[hidden]{display:none!important}#dpad button{width:76px;height:76px;min-width:64px;min-height:64px;border-radius:50%;border:0;padding:0;font-size:34px;line-height:1;display:flex;align-items:center;justify-content:center;background:#0006;color:#fff;box-shadow:0 0 0 2px #ffd27aaa,0 8px 18px #0005;touch-action:none;cursor:pointer;pointer-events:auto;backdrop-filter:blur(4px)}#dpad button:active{transform:translateY(2px);box-shadow:0 0 0 3px #fff,0 4px 10px #0005}#dpad .u{grid-column:2;grid-row:1}#dpad .l{grid-column:1;grid-row:2}#dpad .r{grid-column:3;grid-row:2}#dpad .d{grid-column:2;grid-row:3}
 #stick{position:fixed;z-index:45;left:calc(14px + env(safe-area-inset-left));bottom:calc(14px + env(safe-area-inset-bottom));width:156px;height:156px;border-radius:50%;touch-action:none;pointer-events:none;-webkit-user-select:none;user-select:none;background:none}
@@ -360,7 +360,7 @@ body.touch #tale{left:0;bottom:0;transform:none}
 @media (prefers-reduced-motion:reduce){#tale,#tale .art,#sparkpop.on,#nice.on,#finale,#finale i,#ps h1,#ps .bg,#wipe::after{animation:none!important;transition:none!important}#finale i,#finale .yay,#nice.on{opacity:1}#wipe::after{opacity:0!important}}
 @media (max-height:430px) and (min-width:680px){
 #ps .scr{overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-content:center;justify-items:center;gap:2px 10px;padding:4px 10px 6px}
-#ps .scr>h1,#ps .scr>.msg,#ps .scr>#results,#ps .scr>#finale,#ps .scr>.duo{grid-column:1 / -1}
+#ps .scr>h1,#ps .scr>.msg,#ps .scr>#results,#ps .scr>#finale,#ps .scr>.duo,#ps .scr>.choices{grid-column:1 / -1}
 #ps h1{font-size:22px;line-height:1.05;animation:none;margin:0}
 #ps .scr .msg{font-size:14px!important;line-height:1.15;min-height:0}
 #ps .duo{gap:8px}
@@ -403,6 +403,31 @@ body.touch #tale{left:0;bottom:0;transform:none}
 #tale .kicker,#tale .hint{flex:1 0 100%;text-align:center;margin:0}
 #tale .art{font-size:52px;margin:0}
 #tale .line{flex:1 1 280px;font-size:18px;text-align:left;margin:0}
+}
+#ps .scr.end{gap:8px;overflow:hidden;justify-content:center;justify-content:safe center;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom))}
+#ps .scr.end h1{font-size:clamp(26px,6vw,42px);line-height:1.05;margin:0;animation:none}
+#ps .scr.end .msg{font-size:clamp(14px,3.2vw,18px)!important;line-height:1.2;min-height:0}
+#ps .scr.end .duo{flex-direction:row;gap:8px}
+#ps .scr.end .duo img{width:min(22vw,110px)!important;max-width:110px;max-height:72px;height:72px;object-fit:cover;border-radius:12px;box-shadow:0 8px 18px #000}
+#ps .scr.end .duo b{font-size:22px}
+#ps .scr.end #finale{min-height:24px;font-size:22px;gap:4px}
+#ps .scr.end #finale .yay{font-size:14px}
+#ps .scr.end #results{gap:6px}
+#ps .scr.end #results b{min-height:40px;font-size:15px;padding:4px 10px}
+#ps .scr.end .choices{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:min(88vw,360px)}
+#ps .scr.end .big{min-height:56px;padding:8px 16px;font-size:18px;width:100%;margin:0;box-sizing:border-box}
+#ps .scr.end a.big.ghost{display:inline-flex;align-items:center;justify-content:center;background:transparent;color:#fffaf2;box-shadow:inset 0 0 0 3px #ffd27a;text-decoration:none;opacity:1}
+body.play #ps:has(.scr.end){z-index:120!important}
+@media (max-height:430px) and (min-width:680px){
+#ps .scr.end{padding:6px 12px 8px;gap:4px}
+#ps .scr.end h1{font-size:22px}
+#ps .scr.end .msg{font-size:13px!important;line-height:1.15}
+#ps .scr.end .duo img{height:44px;max-height:44px;width:auto!important;max-width:88px}
+#ps .scr.end .choices{flex-direction:row;width:auto;justify-content:center}
+#ps .scr.end .big{width:auto;min-width:168px}
+#ps .scr.end #results b{min-height:36px;font-size:14px}
+#ps .scr.end #finale{min-height:20px;font-size:18px}
+}
 }`;
   document.head.appendChild(css);
   if (document.getElementById('hide-beats')) document.head.appendChild(document.getElementById('hide-beats'));
@@ -425,6 +450,7 @@ body.touch #tale{left:0;bottom:0;transform:none}
     const d = document.getElementById('dpad'), s = document.getElementById('stick');
     if (d) { d.hidden = true; d.setAttribute('aria-disabled', 'true'); d.querySelectorAll('button').forEach(b => { b.disabled = true; }); }
     if (s) s.hidden = true;
+    try { releaseHold(true); } catch (e) {}
     try { syncModal(); } catch (e) {}
   }
   function revealPad() {
@@ -494,6 +520,7 @@ body.touch #tale{left:0;bottom:0;transform:none}
       if (t && t.closest && t.closest('#home,a,#pz,#mu,#dpad,#skip')) return;
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       if (--left <= 0) {
         window.removeEventListener('pointerup', shield, true);
         window.removeEventListener('click', shield, true);
@@ -584,8 +611,8 @@ body.touch #tale{left:0;bottom:0;transform:none}
   }
   mb.onclick = (ev) => { juiceTap(mb, ev); MUTED = !MUTED; localStorage.setItem('dj_mute', MUTED ? '1' : '0'); mb.textContent = MUTED ? '🔇' : '🔊'; };
   const pz = el(`<button id="pz" aria-label="${T('Pause', 'Pausa')}">⏸</button>`), pzo = el(`<div id="pzo"><div class="title">⏸ ${T('Paused', 'Pausa')}</div><div class="hint">${T('Tap the arrows or swipe to move. Pick everything up, then step into the door.', 'Tocá las flechas o deslizá para moverte. Juntá todo y entrá a la puerta.')}</div><button>▶ ${T('Keep playing', 'Seguir jugando')}</button><div class="row2"><button class="sm">↺ ${T('Start over', 'Empezar de nuevo')}</button><button class="sm" id="pzm"></button></div><a class="home" href="${addQ('gallery.html')}">🏠 ${T('Home', 'Inicio')}</a><a id="jt" href="${addQ('?judge=1')}">${T('Judge view', 'Vista jurado')}</a></div>`); document.body.append(pz, pzo);
-  pz.onclick = (ev) => { juiceTap(pz, ev); pzmT && pzmT(); pzo.classList.add('on'); window.__PAUSED__ = true; }; const [r1, r2] = pzo.querySelectorAll('button'), pzm = pzo.querySelector('#pzm'); const pzmT = () => pzm.textContent = MUTED ? T('🔇 Sound off', '🔇 Sonido apagado') : T('🔊 Sound on', '🔊 Sonido prendido'); pzmT(); pzm.onclick = () => { mb.onclick(); pzmT(); }; r1.onclick = () => { pzo.classList.remove('on'); window.__PAUSED__ = false; }; r2.onclick = () => { G() && G().reset(); r1.onclick(); };
-  addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'p') pzo.classList.contains('on') ? r1.onclick() : pz.onclick(); });
+  pz.onclick = (ev) => { juiceTap(pz, ev); pzmT && pzmT(); pzo.classList.add('on'); window.__PAUSED__ = true; try { releaseHold(true); } catch (e) {} try { syncModal(); } catch (e) {} }; const [r1, r2] = pzo.querySelectorAll('button'), pzm = pzo.querySelector('#pzm'); const pzmT = () => pzm.textContent = MUTED ? T('🔇 Sound off', '🔇 Sonido apagado') : T('🔊 Sound on', '🔊 Sonido prendido'); pzmT(); pzm.onclick = () => { mb.onclick(); pzmT(); }; r1.onclick = () => { pzo.classList.remove('on'); window.__PAUSED__ = false; try { releaseHold(true); } catch (e) {} try { syncModal(); } catch (e) {} }; r2.onclick = () => { G() && G().reset(); r1.onclick(); };
+  addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === 'p') { pzo.classList.contains('on') ? r1.onclick() : pz.onclick(); try { releaseHold(true); } catch (err) {} } });
   // HUD + win/lose flow
   function noun(goals) { const s = (goals || []).map(g => ((g.label || '') + ' ' + (g.id || '')).toLowerCase()).join(' '), n = (goals || []).length || 1; const rows = [[/p(?:ez|eces|ececito)|fish|pescad/, 'fish', 'fish', n => n === 1 ? 'el pez' : `los ${n} peces`], [/nene|nena/, 'kid', 'kids', n => n === 1 ? 'el nene' : `los ${n} nenes`], [/estrella|star/, 'star', 'stars', n => n === 1 ? 'la estrella' : `las ${n} estrellas`], [/hueso|bone/, 'bone', 'bones', n => n === 1 ? 'el hueso' : `los ${n} huesos`], [/c[ií]rculo/, 'circle', 'circles', n => n === 1 ? 'el círculo' : `los ${n} círculos`], [/flor/, 'flower', 'flowers', n => n === 1 ? 'la flor' : `las ${n} flores`], [/casa/, 'house', 'houses', n => n === 1 ? 'la casa' : `las ${n} casas`], [/drag[oó]n/, 'dragon friend', 'dragon friends', n => n === 1 ? 'el dragón amigo' : `los ${n} dragones amigos`], [/amigo/, 'friend', 'friends', n => n === 1 ? 'el amigo' : `los ${n} amigos`], [/punto/, 'dot', 'dots', n => n === 1 ? 'el punto' : `los ${n} puntos`], [/castillo/, 'castle', 'castles', n => n === 1 ? 'el castillo' : `los ${n} castillos`]]; for (const [re, a, b, es] of rows) if (re.test(s)) return { en: n === 1 ? a : b, es: es(n) }; return { en: n === 1 ? 'prize' : 'prizes', es: n === 1 ? 'el premio' : `los ${n} premios` }; }
   function objective(sp, S) { const goals = sp.goals || [], wc = sp.win_condition || {}; if (S.doorOpen && sp.door) return '🚪 ' + T('Walk into the glowing door.', 'Entrá a la puerta brillante.'); if (wc.type === 'collect_all' && goals.length) { const w = noun(goals); return '⭐ ' + T(goals.length === 1 ? `Collect the ${w.en}.` : `Collect all ${goals.length} ${w.en}.`, `Juntá ${w.es}.`); } const id = (wc.target || '') + ' ' + ((goals.find(g => g.id === wc.target) || goals[0] || {}).label || ''); if (wc.type === 'reach_goal') { if (/sol|sun/i.test(id)) return '☀️ ' + T('Reach the sun.', 'Llegá al sol.'); if (/hueso|bone/i.test(id)) return '🦴 ' + T('Reach the bone.', 'Llegá al hueso.'); if (/estrella|star/i.test(id)) return '⭐ ' + T('Reach the star.', 'Llegá a la estrella.'); if (/castillo|castle/i.test(id)) return '🏰 ' + T('Reach the castle.', 'Llegá al castillo.'); if (/casa|house/i.test(id)) return '🏠 ' + T('Reach the house.', 'Llegá a la casa.'); return '🎯 ' + T('Reach the goal.', 'Llegá a la meta.'); } if (wc.type === 'survive_seconds') return '🛡️ ' + T(`Stay safe for ${wc.seconds} seconds.`, `Aguantá ${wc.seconds} segundos.`); return tr(sp.title || ''); }
@@ -744,7 +771,8 @@ body.touch #tale{left:0;bottom:0;transform:none}
     const startN = REDUCED_MOTION ? starsN : 0;
     const cred = (B && B.credit) ? T(B.credit.en || '', B.credit.es || B.credit.en || '') : '';
     const credHtml = cred ? `<div class="msg" id="credit" style="font-size:16px;opacity:.9;max-width:680px">${esc(cred)} · <a href="https://creativecommons.org/licenses/by-sa/4.0/" style="color:#ffd27a">${T('License', 'Licencia')}</a></div>` : '';
-    const s = screen(`<h1>${T('🌟 You did it! 🌟', '🌟 ¡Lo lograste! 🌟')}</h1><div class="msg">${T('Your drawing is now a real game.<br>You cleared all 3 scenes!', 'Lo que dibujaste ahora es un juego de verdad.<br>¡Pasaste las 3 escenas!')}</div><div id="finale" aria-hidden="true"><i class="star">⭐</i><i class="star">⭐</i><i class="star">⭐</i><span class="yay">${yay}</span></div><div id="results" role="status"><b>${prefix}<span id="starn">${startN}</span></b><b id="timeline">${esc(timeLine)}</b></div>${credHtml}<div class="duo"><img src="${drawing}"><b>➜</b><img src="${hero}"></div><div class="msg" style="font-size:22px;opacity:.9">${T('What will you draw next? ✏️', '¿Qué vas a dibujar ahora? ✏️')}</div><button class="big">${T('Play again', 'Jugar de nuevo')}</button> <a class="big" href="${addQ('gallery.html')}" style="display:inline-block;margin-top:10px;color:#fff;text-decoration:none;opacity:.9">${T('🎨 See more games', '🎨 Ver más juegos')}</a>`, hero);
+    const s = screen(`<h1>${T('🌟 You did it! 🌟', '🌟 ¡Lo lograste! 🌟')}</h1><div class="msg">${T('Your drawing is now a real game.<br>You cleared all 3 scenes!', 'Lo que dibujaste ahora es un juego de verdad.<br>¡Pasaste las 3 escenas!')}</div><div id="finale" aria-hidden="true"><i class="star">⭐</i><i class="star">⭐</i><i class="star">⭐</i><span class="yay">${yay}</span></div><div id="results" role="status"><b>${prefix}<span id="starn">${startN}</span></b><b id="timeline">${esc(timeLine)}</b></div>${credHtml}<div class="duo"><img src="${drawing}"><b>➜</b><img src="${hero}"></div><div class="msg" style="font-size:22px;opacity:.9">${T('What will you draw next? ✏️', '¿Qué vas a dibujar ahora? ✏️')}</div><div class="choices"><button class="big" id="again" type="button">${T('Play again', 'Jugar de nuevo')}</button><a class="big ghost" href="${addQ('gallery.html')}">${T('Back to the gallery', 'Volver a la galería')}</a></div>`, hero);
+    s.classList.add('end');
     s.querySelector('button').onclick = () => location.href = addQ(window.__FIRST__ || 'play.html'); runStarCount(s, starsN); setTimeout(() => confetti(s), REDUCED_MOTION ? 0 : 80); }
   function confetti(host) {
     const c = document.createElement('canvas'); c.id = 'winconfetti'; c.className = 'confetti'; c.setAttribute('aria-hidden', 'true');
@@ -765,71 +793,223 @@ body.touch #tale{left:0;bottom:0;transform:none}
   // touch: D-pad (gaps included), left-thumb soft analog stick, swipe + tap-to-move. No screen dead zones.
   const overlayOpen = () => !!(document.body.classList.contains('transitioning') || document.getElementById('onb') || document.getElementById('tale') || document.getElementById('demoNote') || (document.getElementById('wipe') && document.getElementById('wipe').classList.contains('on')) || (document.getElementById('pzo') && document.getElementById('pzo').classList.contains('on')) || (document.getElementById('gate') && document.getElementById('gate').classList.contains('on')) || document.querySelector('#ps .scr:not(.off)'));
   const busy = () => !!(window.__PAUSED__ || overlayOpen());
-  function step(dx, dy) { if (busy() || !(dx || dy)) return; const g = G(); if (!g || !g.move) return; let S; try { S = g.state(); } catch (e) { return; } if (!S || S.status !== 'playing') return; g.move(dx, dy); }
+  let lastStepAt = 0;
+  function step(dx, dy) {
+    if (busy() || !(dx || dy)) return;
+    const now = performance.now();
+    if (now - lastStepAt < 40) return;
+    const g = G(); if (!g || !g.move) return;
+    let S; try { S = g.state(); } catch (e) { return; }
+    if (!S || S.status !== 'playing') return;
+    lastStepAt = now;
+    g.move(dx, dy);
+  }
   function toward(x, y) { const dx = x - innerWidth / 2, dy = y - innerHeight / 2; if (Math.abs(dx) < .5 && Math.abs(dy) < .5) return [0, -1]; return Math.abs(dx) >= Math.abs(dy) ? [Math.sign(dx) || 0, 0] : [0, Math.sign(dy) || 0]; }
   const dpad = el(`<div id="dpad" hidden><button type="button" class="u" data-d="0,-1" aria-label="${T('Up', 'Arriba')}">⬆️</button><button type="button" class="l" data-d="-1,0" aria-label="${T('Left', 'Izquierda')}">⬅️</button><button type="button" class="r" data-d="1,0" aria-label="${T('Right', 'Derecha')}">➡️</button><button type="button" class="d" data-d="0,1" aria-label="${T('Down', 'Abajo')}">⬇️</button></div>`);
   document.body.appendChild(dpad); dpad.addEventListener('contextmenu', e => e.preventDefault());
   const stick = el(`<div id="stick" hidden aria-hidden="true"><div class="ring"></div><div class="knob"></div></div>`);
   document.body.appendChild(stick);
   const knob = stick.querySelector('.knob');
-  const DEAD = .2, MAXR = 46;
-  let kx = 0, ky = 0, tx = 0, ty = 0, raf = 0, joy = null, rec = null, gap = null;
+  const DEAD = .2, MAXR = 46, HOLD_MS = 180;
+  let kx = 0, ky = 0, tx = 0, ty = 0, raf = 0, joy = null, rec = null, gap = null, padPulse = 0, lastPadDir = null;
+  const padHold = new Map();
   function spring() { kx += (tx - kx) * .42; ky += (ty - ky) * .42; knob.style.transform = `translate3d(${kx.toFixed(1)}px,${ky.toFixed(1)}px,0)`; if (joy || Math.hypot(tx - kx, ty - ky) > .4) raf = requestAnimationFrame(spring); else { raf = 0; kx = ky = 0; knob.style.transform = 'translate3d(0,0,0)'; } }
   function kick() { if (!raf) raf = requestAnimationFrame(spring); }
   function padDir(x, y) { const r = dpad.getBoundingClientRect(); const dx = x - (r.left + r.width / 2), dy = y - (r.top + r.height / 2); if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return [0, -1]; return Math.abs(dx) >= Math.abs(dy) ? [Math.sign(dx) || 0, 0] : [0, Math.sign(dy) || 0]; }
   function axis4(ax, ay) { if (Math.abs(ax) < 1e-3 && Math.abs(ay) < 1e-3) return null; return Math.abs(ax) >= Math.abs(ay) ? [Math.sign(ax) || 0, 0] : [0, Math.sign(ay) || 0]; }
   function analog(cx, cy, px, py) { let dx = px - cx, dy = py - cy; const mag = Math.hypot(dx, dy); if (mag > MAXR && mag > 0) { dx *= MAXR / mag; dy *= MAXR / mag; } const m = Math.min(1, Math.hypot(dx, dy) / MAXR); tx = dx; ty = dy; kick(); if (m <= DEAD) return { ax: 0, ay: 0, out: 0 }; const out = (m - DEAD) / (1 - DEAD), h = Math.hypot(dx, dy) || 1; return { ax: dx / h * out, ay: dy / h * out, out }; }
   function placeStick(cx, cy) { const s = stick.offsetWidth || 140; const x = Math.max(s / 2 + 8, Math.min(innerWidth * .5 - 8, cx)); const y = Math.max(s / 2 + 8, Math.min(innerHeight - s / 2 - 8, cy)); stick.classList.add('float', 'hot'); stick.style.left = (x - s / 2) + 'px'; stick.style.top = (y - s / 2) + 'px'; return { x, y }; }
-  function homeStick() { stick.classList.remove('float', 'hot'); stick.style.left = ''; stick.style.top = ''; tx = 0; ty = 0; kick(); }
-  function releaseHold() { if (gap) { clearInterval(gap.iv); gap = null; } if (joy) { clearTimeout(joy.arm); clearTimeout(joy.iv); joy = null; homeStick(); window.__STICK__ = { x: 0, y: 0 }; } if (rec) { clearTimeout(rec.arm); if (rec.iv) clearInterval(rec.iv); rec = null; } }
-  function syncModal() { const open = overlayOpen(); document.body.classList.toggle('modal-open', open); if (open) releaseHold(); }
+  function homeStick() {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    kx = ky = tx = ty = 0;
+    knob.style.transform = 'translate3d(0,0,0)';
+    stick.classList.remove('float', 'hot');
+    stick.style.left = '';
+    stick.style.top = '';
+    window.__STICK__ = { x: 0, y: 0 };
+  }
+  function killT(obj, key) { if (!obj) return; const t = obj[key]; if (t) { clearTimeout(t); clearInterval(t); obj[key] = null; } }
+  function dropCap(node, id) { if (!node || id == null) return; try { if (node.releasePointerCapture) node.releasePointerCapture(id); } catch (err) {} }
+  function reportInput() {
+    window.__INPUT__ = { pad: padHold.size, gap: gap ? 1 : 0, joy: joy ? 1 : 0, rec: rec ? 1 : 0, pulse: padPulse ? 1 : 0, stick: window.__STICK__ || { x: 0, y: 0 }, keys: (window.__KEYS__ || []).slice() };
+  }
+  let padGen = 0;
+  function stopPadPulse() {
+    padGen += 1;
+    if (padPulse) { clearInterval(padPulse); padPulse = 0; }
+    padHold.forEach(h => { dropCap(h.btn, h.id); });
+    padHold.clear();
+    lastPadDir = null;
+  }
+  function netPadDir() {
+    let x = 0, y = 0;
+    padHold.forEach(h => { x += h.dx; y += h.dy; });
+    if (gap) { const d = padDir(gap.x, gap.y); if (d) { x += d[0]; y += d[1]; } }
+    x = Math.sign(x); y = Math.sign(y);
+    if (x && y) return lastPadDir && (lastPadDir[0] === x || lastPadDir[1] === y) ? lastPadDir : (Math.abs(x) >= Math.abs(y) ? [x, 0] : [0, y]);
+    if (x || y) return [x, y];
+    return null;
+  }
+  function pulsePad() {
+    if (busy()) { releaseHold(true); return; }
+    const d = netPadDir();
+    if (!d) {
+      if (!padHold.size && !gap) stopPadPulse();
+      reportInput();
+      return;
+    }
+    lastPadDir = d;
+    step(d[0], d[1]);
+  }
+  function ensurePadPulse() {
+    if (padPulse) return;
+    const gen = padGen;
+    padPulse = setInterval(() => { if (gen !== padGen) return; pulsePad(); }, HOLD_MS);
+  }
+  function samePtr(e, id) { return !e || e.pointerId === undefined || e.pointerId === id; }
+  function releaseHold(quiet) {
+    stopPadPulse();
+    if (gap) { killT(gap, 'iv'); dropCap(dpad, gap.id); gap = null; }
+    if (joy) { killT(joy, 'arm'); killT(joy, 'iv'); joy = null; }
+    if (rec) { killT(rec, 'arm'); killT(rec, 'iv'); rec = null; }
+    homeStick();
+    try { if (window.__CLEAR_KEYS__) window.__CLEAR_KEYS__(); } catch (e) {}
+    reportInput();
+  }
+  window.__RELEASE_HOLD__ = () => releaseHold(true);
+  function syncModal() { const open = overlayOpen(); document.body.classList.toggle('modal-open', open); if (open) releaseHold(true); }
   function leftThumb(x, y) { if (stick.hidden) return false; if (!dpad.hidden) { const r = dpad.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return false; } return x <= innerWidth * .5; }
-  const ui = 'button,a,#dpad,#onb,#pzo,#ps,#pz,#mu,#skip,#tale,#gate,#home,#demoNote,input,label';
-  dpad.querySelectorAll('button').forEach(btn => { const [dx, dy] = btn.dataset.d.split(',').map(Number); let iv = null, pid = null; const stop = e => { if (e && pid !== null && e.pointerId !== pid) return; if (iv) clearInterval(iv); iv = null; pid = null; }; btn.addEventListener('pointerdown', e => { if (pid !== null || (e.button && e.button !== 0)) return; e.preventDefault(); e.stopPropagation(); pid = e.pointerId; try { btn.setPointerCapture(e.pointerId); } catch (err) {} juiceTap(btn, e); const go = () => step(dx, dy); go(); iv = setInterval(go, 180); }); btn.addEventListener('pointerup', stop); btn.addEventListener('pointercancel', stop); btn.addEventListener('lostpointercapture', stop); });
-  const stopGap = e => { if (!gap || (e && gap && e.pointerId !== gap.id)) return; clearInterval(gap.iv); gap = null; };
-  dpad.addEventListener('pointerdown', e => { if (gap || (e.button && e.button !== 0) || (e.target.closest && e.target.closest('button'))) return; e.preventDefault(); e.stopPropagation(); gap = { id: e.pointerId, x: e.clientX, y: e.clientY, iv: null }; try { dpad.setPointerCapture(e.pointerId); } catch (err) {} const go = () => { if (!gap) return; const d = padDir(gap.x, gap.y); if (d) step(d[0], d[1]); }; go(); gap.iv = setInterval(go, 180); });
+  const ui = 'button,a,#dpad,#onb,#pzo,#ps,#pz,#mu,#skip,#tale,#gate,#home,#demoNote,#wipe,input,label';
+  function stopPadPtr(e, btn) {
+    if (!padHold.size) return;
+    if (e && e.pointerId !== undefined) {
+      const h = padHold.get(e.pointerId);
+      if (h && (!btn || h.btn === btn)) { dropCap(h.btn, e.pointerId); padHold.delete(e.pointerId); }
+    } else if (btn) {
+      [...padHold.entries()].forEach(([id, h]) => { if (h.btn === btn) { dropCap(h.btn, id); padHold.delete(id); } });
+    }
+    if (!padHold.size && !gap) stopPadPulse();
+    reportInput();
+  }
+  dpad.querySelectorAll('button').forEach(btn => {
+    const [dx, dy] = btn.dataset.d.split(',').map(Number);
+    btn.addEventListener('pointerdown', e => {
+      if ((e.button && e.button !== 0) || busy() || dpad.hidden || btn.disabled) return;
+      e.preventDefault(); e.stopPropagation();
+      try { btn.setPointerCapture(e.pointerId); } catch (err) {}
+      juiceTap(btn, e);
+      padHold.set(e.pointerId, { id: e.pointerId, dx, dy, btn });
+      lastPadDir = [dx, dy];
+      step(dx, dy);
+      ensurePadPulse();
+      reportInput();
+    });
+    btn.addEventListener('pointerup', e => stopPadPtr(e, btn));
+    btn.addEventListener('pointercancel', e => stopPadPtr(e, btn));
+    btn.addEventListener('lostpointercapture', e => stopPadPtr(e, btn));
+  });
+  const stopGap = e => {
+    if (!gap || (e && !samePtr(e, gap.id))) return;
+    killT(gap, 'iv'); dropCap(dpad, gap.id); gap = null;
+    if (!padHold.size) stopPadPulse();
+    reportInput();
+  };
+  dpad.addEventListener('pointerdown', e => {
+    if (gap || (e.button && e.button !== 0) || busy() || dpad.hidden || (e.target.closest && e.target.closest('button'))) return;
+    e.preventDefault(); e.stopPropagation();
+    gap = { id: e.pointerId, x: e.clientX, y: e.clientY, iv: null };
+    try { dpad.setPointerCapture(e.pointerId); } catch (err) {}
+    const d = padDir(gap.x, gap.y);
+    if (d) { lastPadDir = d; step(d[0], d[1]); }
+    ensurePadPulse();
+    reportInput();
+  });
   dpad.addEventListener('pointermove', e => { if (!gap || e.pointerId !== gap.id) return; gap.x = e.clientX; gap.y = e.clientY; });
   dpad.addEventListener('pointerup', stopGap); dpad.addEventListener('pointercancel', stopGap); dpad.addEventListener('lostpointercapture', stopGap);
-  function endJoy(e) { if (!joy || (e && e.pointerId !== joy.id)) return; clearTimeout(joy.arm); clearTimeout(joy.iv); const tap = !joy.moved, pulsed = joy.pulsed, ax = joy.ax, ay = joy.ay, x = joy.x, y = joy.y; joy = null; homeStick(); window.__STICK__ = { x: 0, y: 0 }; if (!tap && !pulsed) { const d = axis4(ax, ay); if (d) step(d[0], d[1]); } else if (tap && !pulsed) { const d = toward(x, y); if (d) step(d[0], d[1]); } }
-  function endRec(e) { if (!rec || (e && e.pointerId !== rec.id)) return; clearTimeout(rec.arm); if (rec.iv) clearInterval(rec.iv); if (!rec.swiped && !rec.held) { const d = toward(rec.x, rec.y); if (d) step(d[0], d[1]); } rec = null; }
+  function endJoy(e, quiet) {
+    if (!joy || (e && !samePtr(e, joy.id))) return;
+    killT(joy, 'arm'); killT(joy, 'iv');
+    const tap = !joy.moved, pulsed = joy.pulsed, ax = joy.ax, ay = joy.ay, x = joy.x, y = joy.y;
+    joy = null; homeStick(); reportInput();
+    if (quiet) return;
+    if (!tap && !pulsed) { const d = axis4(ax, ay); if (d) step(d[0], d[1]); }
+    else if (tap && !pulsed) { const d = toward(x, y); if (d) step(d[0], d[1]); }
+  }
+  function endRec(e, quiet) {
+    if (!rec || (e && !samePtr(e, rec.id))) return;
+    killT(rec, 'arm'); killT(rec, 'iv');
+    const swiped = rec.swiped, held = rec.held, x = rec.x, y = rec.y;
+    rec = null; reportInput();
+    if (quiet) return;
+    if (!swiped && !held) { const d = toward(x, y); if (d) step(d[0], d[1]); }
+  }
+  function onPtrEnd(e) {
+    const quiet = !e || e.type !== 'pointerup';
+    if (!quiet) {
+      endJoy(e, false);
+      endRec(e, false);
+    }
+    if (padHold.size || gap || joy || rec || padPulse) releaseHold(true);
+  }
   const showPad = () => { document.body.classList.add('touch'); window.__STICK__ = window.__STICK__ || { x: 0, y: 0 }; if (document.body.classList.contains('transitioning') || overlayOpen()) { dpad.hidden = true; stick.hidden = true; dpad.setAttribute('aria-disabled', 'true'); dpad.querySelectorAll('button').forEach(b => { b.disabled = true; }); syncModal(); return; } dpad.hidden = false; stick.hidden = false; dpad.removeAttribute('aria-disabled'); dpad.querySelectorAll('button').forEach(b => { b.disabled = false; }); syncModal(); }; try { if (matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints || 0) > 0) showPad(); } catch (e) {}
   addEventListener('touchstart', () => showPad(), { once: true, passive: true });
-  const homeBtn = document.getElementById('home'); if (homeBtn) homeBtn.addEventListener('pointerdown', e => juiceTap(homeBtn, e));
+  const homeBtn = document.getElementById('home'); if (homeBtn) homeBtn.addEventListener('pointerdown', e => { juiceTap(homeBtn, e); try { releaseHold(true); } catch (err) {} });
   ['c', 'c3d', 'wrap', 'gamecard'].forEach(id => { const n = document.getElementById(id); if (n) n.style.touchAction = 'none'; });
   addEventListener('pointerdown', e => {
-    if (!document.body.classList.contains('play') || (e.button && e.button !== 0) || joy || rec) return;
-    if (e.target.closest && e.target.closest(ui)) return;
+    if (!document.body.classList.contains('play') || (e.button && e.button !== 0)) return;
+    if (e.target.closest && e.target.closest(ui)) {
+      if (e.target.closest('#pz,#pzo,#mu,#home,#tale,#onb,#demoNote,#skip,#gate,#ps,#wipe')) try { releaseHold(true); } catch (err) {}
+      return;
+    }
+    if (joy || rec || busy()) return;
     e.preventDefault();
     const cap = t => { try { (t && t.setPointerCapture ? t : document.body).setPointerCapture(e.pointerId); } catch (err) {} };
     if (leftThumb(e.clientX, e.clientY)) {
       const c = placeStick(e.clientX, e.clientY);
       joy = { id: e.pointerId, cx: c.x, cy: c.y, x: e.clientX, y: e.clientY, ax: 0, ay: 0, out: 0, moved: false, pulsed: false, arm: null, iv: null };
-      window.__STICK__ = { x: 0, y: 0 }; cap(e.target);
-      const pulse = () => { if (!joy) return; joy.pulsed = true; const d = axis4(joy.ax, joy.ay) || (!joy.moved ? toward(joy.x, joy.y) : null); if (d) step(d[0], d[1]); };
+      window.__STICK__ = { x: 0, y: 0 }; cap(e.target); reportInput();
+      const pulse = () => { if (!joy) return; if (busy()) { releaseHold(true); return; } joy.pulsed = true; const d = axis4(joy.ax, joy.ay) || (!joy.moved ? toward(joy.x, joy.y) : null); if (d) step(d[0], d[1]); };
       joy.arm = setTimeout(() => { if (!joy) return; pulse(); const loop = () => { if (!joy) return; pulse(); joy.iv = setTimeout(loop, Math.round(260 - Math.min(1, joy.out) * 140)); }; joy.iv = setTimeout(loop, Math.round(260 - joy.out * 140)); }, 160);
       return;
     }
     rec = { id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, swiped: false, held: false, iv: null, arm: null };
-    cap(e.target);
-    rec.arm = setTimeout(() => { if (!rec || rec.swiped) return; const d = toward(rec.x, rec.y); if (!d) return; rec.held = true; step(d[0], d[1]); rec.iv = setInterval(() => { if (!rec) return; const d2 = toward(rec.x, rec.y); if (d2) step(d2[0], d2[1]); }, 180); }, 180);
+    cap(e.target); reportInput();
+    rec.arm = setTimeout(() => { if (!rec || rec.swiped) return; if (busy()) { releaseHold(true); return; } const d = toward(rec.x, rec.y); if (!d) return; rec.held = true; step(d[0], d[1]); rec.iv = setInterval(() => { if (!rec) return; if (busy()) { releaseHold(true); return; } const d2 = toward(rec.x, rec.y); if (d2) step(d2[0], d2[1]); }, HOLD_MS); }, HOLD_MS);
   });
   addEventListener('pointermove', e => {
-    if (joy && e.pointerId === joy.id) { joy.x = e.clientX; joy.y = e.clientY; const a = analog(joy.cx, joy.cy, e.clientX, e.clientY); joy.ax = a.ax; joy.ay = a.ay; joy.out = a.out; if (a.out > 0) joy.moved = true; window.__STICK__ = { x: +a.ax.toFixed(3), y: +a.ay.toFixed(3) }; return; }
+    if (joy && e.pointerId === joy.id) { if (busy()) { releaseHold(true); return; } joy.x = e.clientX; joy.y = e.clientY; const a = analog(joy.cx, joy.cy, e.clientX, e.clientY); joy.ax = a.ax; joy.ay = a.ay; joy.out = a.out; if (a.out > 0) joy.moved = true; window.__STICK__ = { x: +a.ax.toFixed(3), y: +a.ay.toFixed(3) }; return; }
     if (!rec || e.pointerId !== rec.id || rec.swiped || rec.held) return;
     rec.x = e.clientX; rec.y = e.clientY;
     const dx = e.clientX - rec.x0, dy = e.clientY - rec.y0;
     if (Math.hypot(dx, dy) < 28) return;
-    rec.swiped = true; clearTimeout(rec.arm); if (rec.iv) clearInterval(rec.iv);
+    rec.swiped = true; killT(rec, 'arm'); killT(rec, 'iv');
     step(Math.abs(dx) >= Math.abs(dy) ? Math.sign(dx) : 0, Math.abs(dx) >= Math.abs(dy) ? 0 : Math.sign(dy));
   });
-  addEventListener('pointerup', e => { endJoy(e); endRec(e); });
-  addEventListener('pointercancel', e => { endJoy(e); endRec(e); });
+  addEventListener('pointerup', onPtrEnd, true);
+  addEventListener('pointercancel', onPtrEnd, true);
+  addEventListener('lostpointercapture', onPtrEnd, true);
+  addEventListener('blur', () => releaseHold(true));
+  addEventListener('pagehide', () => releaseHold(true));
+  document.addEventListener('visibilitychange', () => { if (document.hidden) releaseHold(true); });
+  addEventListener('pointerout', e => { if (e.relatedTarget == null && (e.target === document.documentElement || e.target === document.body || e.target === document)) releaseHold(true); });
   addEventListener('touchmove', e => { if (!document.body.classList.contains('play')) return; if (e.target.closest && e.target.closest('#ps .scr, #pzo, #gate, #onb, #tale, #demoNote, #home')) return; e.preventDefault(); }, { passive: false });
-  try { const mo = new MutationObserver(() => syncModal()); mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] }); } catch (e) {}
+  try {
+    let syncQ = 0;
+    const mo = new MutationObserver(() => {
+      if (syncQ) return;
+      syncQ = requestAnimationFrame(() => { syncQ = 0; syncModal(); });
+    });
+    mo.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  } catch (e) {}
   syncModal();
   addEventListener('gesturestart', e => { try { e.preventDefault(); } catch (err) {} });
   addEventListener('dblclick', e => { if (document.body.classList.contains('play')) e.preventDefault(); });
-  addEventListener('keydown', e => { if (document.body.classList.contains('play') && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault(); });
+  addEventListener('keydown', e => {
+    if (!document.body.classList.contains('play')) return;
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'W', 'A', 'S', 'D', ' '].includes(e.key)) e.preventDefault();
+    if (e.key === ' ' || e.code === 'Space') try { releaseHold(true); } catch (err) {}
+  });
+  reportInput();
   function showOnboard(done) { const finish = () => { if (done) done(); }; if (document.getElementById('onb')) { finish(); return; } try { if (localStorage.getItem('dj_onboard_v2') === '1') { finish(); return; } } catch (e) { finish(); return; } const b = el(`<div id="onb" role="dialog" aria-label="${T('How to play', 'Cómo jugar')}"><div class="card"><div class="kicker">${T('First time here', 'Primera vez')}</div><div>👆 ${T('Swipe, or tap the arrows, to move', 'Deslizá o tocá las flechas para moverte')}</div><div>⭐ ${T('Pick up every friend', 'Juntá a todos los amigos')}</div><div>🚪 ${T('Then walk into the glowing door', 'Después entrá a la puerta brillante')}</div><div class="go">${T('Tap anywhere to start', 'Tocá en cualquier lado para empezar')}</div></div></div>`); ignoreOpeningTap(b); const dismiss = ev => { if (ev) { ev.preventDefault(); ev.stopPropagation(); } if (!b.isConnected) return; swallowNextClick(); try { localStorage.setItem('dj_onboard_v2', '1'); } catch (e) {} b.remove(); finish(); try { syncModal(); } catch (e2) {} }; b.addEventListener('pointerdown', dismiss); document.body.appendChild(b); try { syncModal(); } catch (e) {} }
   function beginPlay() { showOnboard(() => story(storyParts(P.level || 1))); }
   function showSavedDemo() { if (document.getElementById('demoNote')) return; const src = B.photo_src || (B.drawing_b64 ? 'data:image/png;base64,' + B.drawing_b64 : ''); const quote = B.transcript ? esc(tr(B.transcript)) : ''; const b = el(`<div id="demoNote" role="dialog" aria-label="${T('Saved demo', 'Demo guardada')}"><div class="card"><div class="line">${T('Playing a saved demo world (drawing + voice made earlier)', 'Jugando un mundo demo guardado (dibujo y voz hechos antes)')}</div>${src ? `<img alt="${T('Saved drawing', 'Dibujo guardado')}" src="${src}">` : ''}${quote ? `<div class="tr">“${quote}”</div>` : ''}<button type="button" class="big">${T('▶ Play', '▶ Jugar')}</button></div></div>`); let gone = false; const dismiss = ev => { if (gone) return; const hit = ev && ev.target && ev.target.closest ? ev.target.closest('button') : null; if (hit) juiceTap(hit, ev); gone = true; if (ev) { ev.preventDefault(); ev.stopPropagation(); swallowNextClick(); } b.remove(); try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen(); } catch (e) {} beginPlay(); syncModal(); }; b.addEventListener('pointerdown', dismiss); document.body.appendChild(b); syncModal(); }

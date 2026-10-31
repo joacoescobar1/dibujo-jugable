@@ -109,7 +109,7 @@
     for (let k = x0 - (y1 - y0); k < x1; k += 4) { x.beginPath(); x.moveTo(k + r() * 2, y1); x.lineTo(k + (y1 - y0) + r() * 2, y0); x.stroke(); } x.restore(); }
   function shape(pts, col, r, lw = 2.4) { crayon(pts, col, r); x.strokeStyle = PAL.ink; x.lineWidth = lw; x.lineJoin = x.lineCap = 'round'; wob(pts, r); }
   function eyes(cx, cy, s, r, mood = 0) { [-1, 1].forEach(d => { x.fillStyle = '#fff'; x.beginPath(); x.ellipse(cx + d * s * .28, cy, s * .16, s * .19, 0, 0, 7); x.fill(); x.strokeStyle = PAL.ink; x.lineWidth = 1.5; x.stroke();
-    x.fillStyle = PAL.ink; x.beginPath(); x.arc(cx + d * s * .28 + s * .03, cy + s * .04, s * .08, 0, 7); x.fill();
+    x.fillStyle = PAL.ink; x.beginPath(); x.arc(cx + d * s * .28 + s * .03, cy + s * .04, Math.max(0.01, s * .08), 0, 7); x.fill();
     if (mood) { x.lineWidth = 2.2; x.beginPath(); x.moveTo(cx + d * s * .12, cy - s * .2); x.lineTo(cx + d * s * .44, cy - s * .3); x.stroke(); } }); }
   function shadow(cx, cy, w) { x.save(); x.fillStyle = '#3a2a1a'; x.globalAlpha = .18; x.beginPath(); x.ellipse(cx, cy, w * .42, w * .12, 0, 0, 7); x.fill(); x.restore(); }
   function star(cx, cy, R, r, rot = 0) { const p = []; for (let i = 0; i < 10; i++) { const a = rot - Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? R * .45 : R; p.push([cx + Math.cos(a) * rr, cy + Math.sin(a) * rr]); } return p; }
@@ -175,8 +175,8 @@
   const MOTES = Array.from({ length: 26 }, (_, i) => { const r = rnd('m' + i); return { x: r(), y: r(), s: .5 + r() * 1.6, v: .00004 + r() * .00008, ph: r() * 6.28 }; });
   function fxLayer() { FX.parts = FX.parts.filter(p => (p.life -= .018) > 0); const t = performance.now(), Wp = spec.grid.w * T, Hp = spec.grid.h * T;
     x.save(); x.globalCompositeOperation = 'lighter';  // soft glow particles (fail/fix/win bursts) + ambient dust motes in the light
-    FX.parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .14; p.vx *= .985; const R = p.r * p.life + 1, g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 3);
-      g.addColorStop(0, p.col); g.addColorStop(1, 'transparent'); x.globalAlpha = p.life * .9; x.fillStyle = g; x.beginPath(); x.arc(p.x, p.y, R * 3, 0, 6.283); x.fill(); });
+    FX.parts.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .14; p.vx *= .985; const R = Math.max(0.01, p.r * p.life + 1), g = x.createRadialGradient(p.x, p.y, 0, p.x, p.y, R * 3);
+      g.addColorStop(0, p.col); g.addColorStop(1, 'transparent'); x.globalAlpha = p.life * .9; x.fillStyle = g; x.beginPath(); x.arc(p.x, p.y, Math.max(0.01, R * 3), 0, 6.283); x.fill(); });
     MOTES.forEach(m => { const yy = ((m.y - t * m.v) % 1 + 1) % 1, xx = m.x + Math.sin(t / 1800 + m.ph) * .01; x.globalAlpha = .18 + .12 * Math.sin(t / 700 + m.ph); x.fillStyle = '#ffe9a8';
       x.beginPath(); x.arc(xx * Wp, yy * Hp, m.s, 0, 6.283); x.fill(); });
     x.restore(); x.save();  // studio lighting: warm key light from top-left + vignette, so the paper reads as a lit physical object
@@ -251,8 +251,42 @@
     $('ovt').textContent = S.status === 'won' ? `${UI('YOU WIN!', '¡GANASTE!')} ${GOAL_EMOJI()}` : S.status === 'lost' ? (window.__VOICE_FAIL__ ? UI('You left without the 3 kids! 0/3', '¡Te fuiste sin los 3 nenes! 0/3') : LOSE_TEXT()) : '';
   }
   function log(kind, text) { const li = document.createElement('li'); li.className = kind; li.textContent = text; $('tll').appendChild(li); }
-  const K = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
-  addEventListener('keydown', e => { if (K[e.key]) move(...K[e.key]); if (e.key === ' ') { e.preventDefault(); move(0, 0); } if (e.key === 'r') reset(); });
+  const K = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0], w: [0, -1], W: [0, -1], a: [-1, 0], A: [-1, 0], s: [0, 1], S: [0, 1], d: [1, 0], D: [1, 0] };
+  const held = new Set();
+  const reportKeys = () => { window.__KEYS__ = [...held]; };
+  const clearKeys = () => { held.clear(); reportKeys(); };
+  window.__CLEAR_KEYS__ = clearKeys;
+  const keyBlocked = () => !!(window.__PAUSED__ || (document.body && (document.body.classList.contains('modal-open') || document.body.classList.contains('transitioning'))));
+  function netHeld() {
+    let x = 0, y = 0, last = null;
+    held.forEach(k => { const d = K[k]; if (!d) return; x += d[0]; y += d[1]; last = d; });
+    x = Math.sign(x); y = Math.sign(y);
+    if (x && y) return last;
+    if (x || y) return [x, y];
+    return null;
+  }
+  addEventListener('keydown', e => {
+    if (e.target && e.target.closest && e.target.closest('input,textarea,select,[contenteditable]')) return;
+    if (K[e.key]) {
+      if (e.repeat && !held.has(e.key)) return;
+      if (keyBlocked()) return;
+      held.add(e.key); reportKeys();
+      const d = netHeld();
+      if (d) move(...d);
+      return;
+    }
+    if (e.key === ' ' || e.code === 'Space') {
+      e.preventDefault();
+      clearKeys();
+      if (!keyBlocked()) move(0, 0);
+      return;
+    }
+    if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey) reset();
+  });
+  addEventListener('keyup', e => { if (held.delete(e.key)) reportKeys(); });
+  addEventListener('blur', clearKeys);
+  addEventListener('pagehide', clearKeys);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
   const state = () => JSON.parse(JSON.stringify(S));
   window.__GAME__ = { spec, state, move, reset, log, gates: () => JSON.parse(JSON.stringify(GATES)), openGate: (id, side) => { const g = GATES.find(g => g.id === id); if (!g) return; g.open = true; if (g.kind === 'fork' && g.alt) { if (side === 'B') { const c0 = g.cell; g.cell = g.alt; g.alt = c0; } g.sealed = true; } S.events.push('open:' + id); pop(g.cell[0], g.cell[1], 26, ['#ffd27a', '#7dffb0', '#b388ff']); { const nn = GATES.find(q => !q.open); if (nn) setTimeout(() => { nn.shownAt = 0; pop(nn.cell[0], nn.cell[1], 18, ['#ffd27a', '#ff8ac2']); blip(880); draw(); }, 350); } blip(660); setTimeout(() => blip(990), 80); draw(); }, failGate: id => { const g = GATES.find(g => g.id === id); S.events.push('gatefail:' + id); FX.shake = 12; if (g) pop(g.cell[0], g.cell[1], 14, ['#ef5350', '#ff8a65']); blip(140, .22, 'sawtooth'); draw(); }, setAttempt: n => { S.attempt = n; draw(); }, ready: true };
   (window.__TIMELINE__ || []).forEach(e => log(e.kind, e.text));
