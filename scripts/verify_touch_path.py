@@ -7,6 +7,9 @@ Pass 9: landscape 844x390 fit without scroll (HUD, D-pad, modals, story, results
 ending star count-up and finale, gallery hover/press and clearer titles.
 Pass 12: fullscreen world, judge phone world fills the screen, rim/soft shadow/bloom,
 particle trail, camera ease, parallax, optional challenge clock, local best time.
+Pass 13: portrait 390x844 and landscape 844x390, English and Spanish, reduced motion.
+Player mode has no judge chrome. The canvas fills the viewport (no black band over 8%).
+The story splash is reachable. The phone judge page is not an empty black void.
 """
 import json, pathlib, re, sys
 from playwright.sync_api import sync_playwright
@@ -150,8 +153,85 @@ def check_fullscreen(pg, fails, tag):
         return
     if info.get("lab") or info.get("labClass") or info.get("sam"):
         fails.append("%s judge chrome visible in player mode: %s" % (tag, info))
-    if info["t"] > 4 or info["l"] > 4 or info["w"] < info["vw"] - 12 or info["h"] < info["vh"] - 12:
+    chrome = pg.evaluate("""() => {
+      const t = (document.body && document.body.innerText) || '';
+      const needles = ['Judge tour', 'Watch the agent', 'Agent loop', 'original drawing', 'Modo juez', 'Loop del agente', 'SAM recorta', 'Vista jurado', 'Ver al agente'];
+      return needles.filter(s => t.indexOf(s) >= 0);
+    }""")
+    if chrome:
+        fails.append("%s judge chrome visible in player mode: %s" % (tag, chrome))
+    gap_h = info["vh"] - info["h"]
+    gap_w = info["vw"] - info["w"]
+    if info["t"] > info["vh"] * 0.08 or info["l"] > info["vw"] * 0.08 or gap_h > info["vh"] * 0.08 or gap_w > info["vw"] * 0.08 or info["t"] > 4 or info["l"] > 4 or gap_w > 12 or gap_h > 12:
         fails.append("%s letterboxed play view: %s" % (tag, info))
+
+def shot_bands(path):
+    from PIL import Image
+    im = Image.open(path).convert("RGB")
+    w, h = im.size
+    px = im.load()
+    def dark(p):
+        r, g, b = p
+        return r < 28 and g < 28 and b < 36
+    def rowf(y):
+        c = n = 0
+        for x in range(0, w, 2):
+            n += 1
+            if dark(px[x, y]):
+                c += 1
+        return c / float(n or 1)
+    def colf(x):
+        c = n = 0
+        for y in range(0, h, 2):
+            n += 1
+            if dark(px[x, y]):
+                c += 1
+        return c / float(n or 1)
+    def edge(span, frac, rev=False):
+        n = 0
+        seq = range(span - 1, -1, -1) if rev else range(span)
+        for i in seq:
+            if frac(i) >= 0.85:
+                n += 1
+            else:
+                break
+        return n / float(span or 1)
+    longest = run = 0
+    for y in range(h):
+        if rowf(y) >= 0.85:
+            run += 1
+            if run > longest:
+                longest = run
+        else:
+            run = 0
+    y0 = int(h * 0.55)
+    c = n = 0
+    for y in range(y0, h, 2):
+        for x in range(0, w, 2):
+            n += 1
+            if dark(px[x, y]):
+                c += 1
+    return {
+        "top": round(edge(h, rowf), 3),
+        "bottom": round(edge(h, rowf, True), 3),
+        "left": round(edge(w, colf), 3),
+        "right": round(edge(w, colf, True), 3),
+        "longest": round(longest / float(h or 1), 3),
+        "lower": round(c / float(n or 1), 3),
+    }
+
+def assert_play_bands(fails, path, tag, limit=0.08):
+    info = shot_bands(path)
+    print("bands", tag, info, flush=True)
+    bad = [k for k in ("top", "bottom", "left", "right", "longest") if info.get(k, 0) > limit]
+    if bad:
+        fails.append("%s letterbox >8%% black bands: %s" % (tag, info))
+
+def assert_judge_filled(fails, path, tag):
+    info = shot_bands(path)
+    print("judge bands", tag, info, flush=True)
+    if info.get("lower", 1) > 0.7:
+        fails.append("%s judge page is an empty black void: %s" % (tag, info))
 
 def check_pitch(pg, fails):
     pg.goto(GALLERY, wait_until="domcontentloaded")
@@ -308,19 +388,21 @@ def tap_node(pg, sel):
 
 def reach_tale(pg):
     pg.wait_for_function("() => window.__GAME__ && window.__GAME__.ready", timeout=30000)
-    for _ in range(8):
+    for _ in range(20):
         tale = pg.locator("#tale")
         if tale.count() and tale.is_visible():
             return True
         note = pg.locator("#demoNote")
         if note.count() and note.is_visible():
             tap_node(pg, "#demoNote button")
+            pg.wait_for_timeout(200)
             continue
         onb = pg.locator("#onb")
         if onb.count() and onb.is_visible():
             tap_node(pg, "#onb")
+            pg.wait_for_timeout(200)
             continue
-        pg.wait_for_timeout(180)
+        pg.wait_for_timeout(200)
     return False
 
 def skip_tale(pg):
@@ -516,7 +598,20 @@ def check_between(pg, fails, n):
 def check_es(pg, fails):
     pg.goto(PLAY + "?lang=es&mute=1", wait_until="domcontentloaded")
     if not reach_tale(pg):
-        fails.append("Spanish story card did not appear")
+        state = pg.evaluate("""() => ({
+          href: location.href.split('/').pop(),
+          tale: !!document.getElementById('tale'),
+          demo: !!document.getElementById('demoNote'),
+          onb: !!document.getElementById('onb'),
+          closed: window.__TALE__ && window.__TALE__.closed,
+          level: window.__BUNDLE__ && window.__BUNDLE__.play && window.__BUNDLE__.play.level
+        })""")
+        print("es miss", state, flush=True)
+        try:
+            pg.screenshot(path=str(EV / "verify_touch_pass13_es_miss.png"))
+        except Exception:
+            pass
+        fails.append("Spanish story card did not appear: %s" % state)
         return
     card = story_card(pg)
     pill = pg.locator("#h3s").inner_text().strip()
@@ -530,6 +625,15 @@ def check_es(pg, fails):
         fails.append("Spanish story claims VERIFIED")
     pg.screenshot(path=str(EV / "verify_touch_story_es.png"))
     dismiss(pg)
+    pg.wait_for_timeout(300)
+    try:
+        pg.wait_for_function("() => window.__STAGE3D__ && window.__STAGE3D__.ok", timeout=20000)
+    except Exception as ex:
+        fails.append("Spanish play stage did not fill: " + str(ex)[:120])
+    else:
+        check_fullscreen(pg, fails, "es-play")
+        pg.screenshot(path=str(EV / "verify_touch_pass13_es.png"))
+        assert_play_bands(fails, EV / "verify_touch_pass13_es.png", "es-play")
 
 def pos(pg):
     return pg.evaluate("() => { const s = window.__GAME__.state().player; return [s.x, s.y, s && window.__GAME__.state().status]; }")
@@ -544,6 +648,7 @@ def check_controls(pg, fails):
     scan(pg, "play-hud", fails)
     check_fullscreen(pg, fails, "play-hud")
     pg.screenshot(path=str(EV / "verify_touch_fullscreen.png"))
+    assert_play_bands(fails, EV / "verify_touch_fullscreen.png", "play-hud")
     dpad = pg.locator("#dpad")
     if dpad.count() == 0 or not dpad.is_visible():
         fails.append("D-pad hidden after dismiss")
@@ -638,6 +743,26 @@ def check_judge(pg, fails):
             draw = pg.evaluate("() => [...document.querySelectorAll('#draw img')].map(i => i.id + ':' + i.naturalWidth)")
             print("judge drawing", draw, flush=True)
     pg.screenshot(path=str(EV / "verify_touch_judge_phone.png"))
+    assert_judge_filled(fails, EV / "verify_touch_judge_phone.png", "judge-portrait")
+    pg.set_viewport_size({"width": 844, "height": 390})
+    pg.goto(PLAY + "?judge=1&mute=1&norender=1", wait_until="domcontentloaded")
+    try:
+        pg.wait_for_function("() => window.__STAGE3D__ && (window.__STAGE3D__.ok || window.__STAGE3D__.error)", timeout=20000)
+    except Exception as ex:
+        fails.append("landscape judge stage did not boot: " + str(ex)[:120])
+    pg.wait_for_timeout(400)
+    land_box = pg.evaluate("""() => {
+      const w = document.getElementById('wrap');
+      const r = w ? w.getBoundingClientRect() : { height: 0, width: 0 };
+      const lab = document.body.classList.contains('lab') || document.documentElement.classList.contains('lab');
+      return { h: Math.round(r.height), w: Math.round(r.width), vh: innerHeight, vw: innerWidth, lab: lab };
+    }""")
+    print("judge land wrap", land_box, flush=True)
+    if not land_box or not land_box.get("lab") or land_box["h"] < land_box["vh"] * 0.5:
+        fails.append("landscape judge world does not fill the phone: %s" % land_box)
+    pg.screenshot(path=str(EV / "verify_touch_pass13_judge_land.png"))
+    assert_judge_filled(fails, EV / "verify_touch_pass13_judge_land.png", "judge-landscape")
+    pg.set_viewport_size({"width": 390, "height": 844})
 
 def check_index(pg, fails):
     pg.goto(INDEX + "?mute=1", wait_until="domcontentloaded")
@@ -891,6 +1016,9 @@ def check_reduced(p, fails):
         if spark.get("spark") != 1 or spark.get("on") != 1 or spark.get("spin") != 0:
             fails.append("reduced-motion sparkle star still moves or is hidden: %s" % spark)
         pg.screenshot(path=str(EV / "verify_touch_spark_reduced.png"))
+        check_fullscreen(pg, fails, "reduced-play")
+        pg.screenshot(path=str(EV / "verify_touch_pass13_reduced.png"))
+        assert_play_bands(fails, EV / "verify_touch_pass13_reduced.png", "reduced-play")
         origin = pos(pg)
         for sel in ("#dpad .r", "#dpad .d", "#dpad .l", "#dpad .u"):
             if not pg.locator("#dpad").is_visible():
@@ -1148,9 +1276,33 @@ def restore_window(pg):
         pass
 
 
+def reach_pitch(pg, fails, tag, es=False):
+    pg.goto(GALLERY + ("?lang=es" if es else ""), wait_until="domcontentloaded")
+    pg.evaluate("() => { try { sessionStorage.removeItem('dj_pitch_v1'); } catch (e) {} }")
+    pg.reload(wait_until="domcontentloaded")
+    try:
+        pg.wait_for_selector("#pitch", timeout=8000)
+    except Exception as ex:
+        fails.append("%s story splash missing: %s" % (tag, str(ex)[:120]))
+        return
+    card = pitch_card(pg)
+    print("pitch", tag, card, flush=True)
+    line = (card or {}).get("line") or ""
+    if not card or not card.get("full") or card.get("beat") != 1 or not card.get("corner") or not card.get("mid"):
+        fails.append("%s story splash not reachable: %s" % (tag, card))
+    elif es and not ES.search(line):
+        fails.append("%s story splash stayed in English: %s" % (tag, line))
+    elif not es and (ES.search(line) or "kid draws" not in line.lower()):
+        fails.append("%s story splash copy: %s" % (tag, line))
+    if VER.search(line):
+        fails.append("%s story splash claims VERIFIED" % tag)
+    pg.screenshot(path=str(EV / ("verify_touch_pass13_pitch_%s.png" % tag)))
+    dismiss_pitch(pg)
+
 def check_landscape(pg, fails):
     restore_window(pg)
     pg.set_viewport_size({"width": 844, "height": 390})
+    reach_pitch(pg, fails, "land", es=False)
     pg.goto(GALLERY, wait_until="domcontentloaded")
     pg.wait_for_timeout(250)
     dismiss_pitch(pg)
@@ -1212,6 +1364,7 @@ def check_landscape(pg, fails):
         fails.append("landscape goal banner overlaps the D-pad: %s" % hit)
     scan(pg, "land-play", fails)
     pg.screenshot(path=str(EV / "verify_touch_play_land.png"))
+    assert_play_bands(fails, EV / "verify_touch_play_land.png", "land-play")
     pg.locator("#pz").tap()
     pg.wait_for_timeout(200)
     if not pg.locator("#pzo").is_visible():
@@ -1223,6 +1376,28 @@ def check_landscape(pg, fails):
         pg.screenshot(path=str(EV / "verify_touch_pause_land.png"))
         pg.locator("#pzo button").first.tap()
         pg.wait_for_timeout(150)
+    reach_pitch(pg, fails, "land-es", es=True)
+    pg.goto(PLAY + "?lang=es&mute=1", wait_until="domcontentloaded")
+    if not reach_tale(pg):
+        fails.append("landscape Spanish story did not open")
+    else:
+        tale = story_card(pg) or {}
+        print("land es story", tale, flush=True)
+        if not ES.search(tale.get("line") or ""):
+            fails.append("landscape Spanish story stayed in English: %s" % tale)
+        if not tale.get("full"):
+            fails.append("landscape Spanish story is not full screen: %s" % tale)
+        pg.screenshot(path=str(EV / "verify_touch_pass13_story_land_es.png"))
+        skip_tale(pg)
+    pg.wait_for_timeout(250)
+    try:
+        pg.wait_for_function("() => window.__STAGE3D__ && window.__STAGE3D__.ok", timeout=20000)
+    except Exception as ex:
+        fails.append("landscape Spanish stage did not fill: " + str(ex)[:120])
+    else:
+        check_fullscreen(pg, fails, "land-es-play")
+        pg.screenshot(path=str(EV / "verify_touch_pass13_land_es.png"))
+        assert_play_bands(fails, EV / "verify_touch_pass13_land_es.png", "land-es-play")
     restore_window(pg)
     pg.wait_for_timeout(150)
     pg.set_viewport_size({"width": 390, "height": 844})
@@ -1243,6 +1418,7 @@ def full_path(pg, fails):
     check_fullscreen(pg, fails, "scene1")
     pg.screenshot(path=str(EV / "verify_touch_scene1.png"))
     pg.screenshot(path=str(EV / "verify_touch_fullscreen_scene1.png"))
+    assert_play_bands(fails, EV / "verify_touch_fullscreen_scene1.png", "scene1")
     scene_fit = layout_overflow(pg)
     print("scene1 fit", scene_fit, flush=True)
     if scene_fit:
@@ -1272,7 +1448,6 @@ def full_path(pg, fails):
         dismiss(pg)
         hud_ok(pg, fails, n + 1)
         scan(pg, "scene%s" % (n + 1), fails)
-        pg.screenshot(path=str(EV / ("verify_touch_scene%s.png" % (n + 1))))
         arrived = pg.evaluate("() => { const w = document.getElementById('wipe'); return w && w.dataset ? (w.dataset.fx || '') : ''; }")
         expect = "wipe" if (n + 1) % 2 == 0 else "iris"
         print("arrived", n + 1, arrived, flush=True)
@@ -1284,6 +1459,9 @@ def full_path(pg, fails):
             fails.append("scene %s transition did not finish: %s" % (n + 1, str(ex)[:100]))
         if not pg.locator("#dpad").is_visible():
             fails.append("D-pad still hidden after scene %s transition" % (n + 1))
+        pg.screenshot(path=str(EV / ("verify_touch_scene%s.png" % (n + 1))))
+        check_fullscreen(pg, fails, "scene%s" % (n + 1))
+        assert_play_bands(fails, EV / ("verify_touch_scene%s.png" % (n + 1)), "scene%s" % (n + 1))
     pg.evaluate("document.getElementById('auto').click()")
     pg.wait_for_function("() => window.__GAME__ && window.__GAME__.state().status === 'won'", timeout=180000)
     pg.wait_for_timeout(280)
@@ -1415,6 +1593,7 @@ def check_fishhome(pg, fails):
         fails.append("fish home live calls: %s" % info.get("calls"))
     scan(pg, "fish-scene1", fails)
     pg.screenshot(path=str(EV / "verify_touch_fishhome_scene1.png"))
+    assert_play_bands(fails, EV / "verify_touch_fishhome_scene1.png", "fish-scene1")
     pg.goto(fish + "?lang=es&mute=1", wait_until="domcontentloaded")
     if not reach_tale(pg):
         fails.append("fish home Spanish story did not open")
@@ -1446,6 +1625,7 @@ def check_fishhome(pg, fails):
     check_fullscreen(pg, fails, "fish-scene3")
     scan(pg, "fish-scene3", fails)
     pg.screenshot(path=str(EV / "verify_touch_fishhome_scene3.png"))
+    assert_play_bands(fails, EV / "verify_touch_fishhome_scene3.png", "fish-scene3")
     pg.evaluate("document.getElementById('auto').click()")
     try:
         pg.wait_for_function("() => window.__GAME__ && window.__GAME__.state().status === 'won'", timeout=60000)

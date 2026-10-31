@@ -1,1 +1,1 @@
-Continue the active Dibujo Jugable goal per PLAYBOOK.md §2–4. Run the oracle; fix the worst failure; log usage to SPEND.md; stop Muse if spend >= $100.
+Continue the active Dibujo Jugable goal. Run the oracle; fix the worst failure; log usage locally; stop the lead model if spend >= $100. Never print API keys.

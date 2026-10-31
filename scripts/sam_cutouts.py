@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """LIVE: kid drawing -> SAM 3.1 boxes per noun -> local alpha cutout (non-paper pixels inside box) -> sprites/*.png.
-Optional --clean N: Muse Image edit on the first N cutouts (sketch -> clean sprite, same style). Logs cost to SPEND.md.
+Optional --clean N: Muse Image edit on the first N cutouts (sketch -> clean sprite, same style). Logs estimated cost locally.
 Usage: sam_cutouts.py samples/synthetic_12/drawing.png --nouns rocket,star,monster,rock --out runs/sam_12 [--clean 1]"""
 import sys, json, pathlib, argparse, base64, subprocess
 ROOT = pathlib.Path(__file__).resolve().parents[1]; sys.path.insert(0, str(ROOT / "agent"))

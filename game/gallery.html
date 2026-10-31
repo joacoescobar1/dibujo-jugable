@@ -7,7 +7,7 @@ h1{margin:12px 0 4px;font-size:clamp(32px,8vw,40px)}p.s{opacity:.8;margin:0 0 24
 .g{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;padding:0 0 40px}
 .c{background:#1d1733;border-radius:18px;width:min(300px,92vw);overflow:hidden;box-shadow:0 10px 30px #000a}
 .c img{width:100%;height:220px;object-fit:cover;background:#fffbe8}
-.c h2{margin:12px 0 4px;font-size:24px;padding:0 10px;overflow-wrap:anywhere;color:#fff8dc}.c h2::after{content:"";display:block;width:64px;height:3px;margin:6px auto 0;border-radius:99px;background:#ffd27a}.c p{margin:2px 14px 8px;font-size:17px;line-height:1.35;overflow-wrap:anywhere}.c small{opacity:.7;overflow-wrap:anywhere}.c{transition:transform .18s ease,box-shadow .18s ease}.c:hover{transform:translateY(-8px);box-shadow:0 0 0 4px #ffd27a,0 16px 28px #000c}.c:active,.c.pressed{transform:translateY(2px) scale(.98);box-shadow:0 0 0 4px #ffd27a,0 4px 0 #000a}.soon{opacity:.55;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:420px;border:3px dashed #5a4d8a;background:#140f26}
+.c h2{margin:12px 0 4px;font-size:24px;padding:0 10px;overflow-wrap:anywhere;color:#fff8dc}.c h2::after{content:"";display:block;width:64px;height:3px;margin:6px auto 0;border-radius:99px;background:#ffd27a}.c p{margin:2px 14px 8px;font-size:17px;line-height:1.35;overflow-wrap:anywhere}.c small{opacity:.7;overflow-wrap:anywhere}.c{transition:transform .18s ease,box-shadow .18s ease}.c:hover{transform:translateY(-8px);box-shadow:0 0 0 4px #ffd27a,0 16px 28px #000c}.c:active,.c.pressed{animation:galJuice .26s cubic-bezier(.2,1.5,.3,1) both;box-shadow:0 0 0 4px #ffd27a,0 4px 0 #000a}@keyframes galJuice{0%{transform:translateY(1px) scale(.94)}48%{transform:translateY(-3px) scale(1.04)}100%{transform:translateY(0) scale(1)}}.gal-puff{position:fixed;z-index:30;width:0;height:0;pointer-events:none}.gal-puff i{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#ffe7a8;box-shadow:0 0 8px #ffcf8a;animation:galPuff .34s ease-out forwards}@keyframes galPuff{to{opacity:0;transform:translate3d(var(--dx),var(--dy),0) scale(.3)}}.soon{opacity:.55;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:420px;border:3px dashed #5a4d8a;background:#140f26}
 p.note{opacity:.7;font-size:16px;padding:0 16px}
 .b{display:flex;gap:10px;justify-content:center;padding:14px;flex-wrap:wrap}
 a.btn{background:linear-gradient(90deg,#ef6c00,#fbc02d);color:#fff;text-decoration:none;padding:14px 22px;min-height:56px;min-width:56px;box-sizing:border-box;border-radius:24px;font-weight:800;font-size:20px;display:inline-flex;align-items:center;justify-content:center;touch-action:manipulation}
@@ -16,7 +16,7 @@ p.note a{display:inline-flex;align-items:center;justify-content:center;min-heigh
 footer{opacity:.55;font-size:12px;padding:8px 16px 20px}
 p.note,footer,h1,p.s{overflow-wrap:anywhere}
 @media (max-height:500px){h1{font-size:26px;margin:2px 0}p.s{margin:0 0 6px;font-size:15px}.c img{height:72px}.g{gap:12px;padding-bottom:8px}.soon{min-height:0}.c h2{font-size:20px;margin:6px 0 0}.c h2::after{margin-top:3px}.c p{font-size:14px;line-height:1.2;margin:2px 10px 4px}.c small{font-size:12px}.b{padding:6px 8px 8px}}
-@media (prefers-reduced-motion:reduce){.c{transition:none}.c:hover,.c:active,.c.pressed{transform:none;box-shadow:0 0 0 4px #ffd27a,0 10px 24px #000a}}
+@media (prefers-reduced-motion:reduce){.c{transition:none}.c:hover,.c:active,.c.pressed{animation:none;transform:none;box-shadow:0 0 0 4px #ffd27a,0 10px 24px #000a}.gal-puff{display:none!important}}
 </style></head><body>
 <h1 data-es="🎨 Dibujo Jugable">🎨 Playable Drawing</h1><p class="s" data-es="Dibujos de chicos convertidos en juegos. Elegí uno y jugá.">Kids' drawings are ready to play, so pick a card and jump in!</p>
 <div class="g">
@@ -95,8 +95,38 @@ p.note,footer,h1,p.s{overflow-wrap:anywhere}
 (function () {
   var ES = new URLSearchParams(location.search).get('lang') === 'es';
   var T = function (en, es) { return ES ? es : en; };
+  var reduced = false, ac = null;
+  try { reduced = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  function blip() {
+    try {
+      if (localStorage.getItem('dj_mute') === '1') return;
+      var Ctx = window.AudioContext || window.webkitAudioContext; if (!Ctx) return;
+      ac = ac || new Ctx(); if (ac.state === 'suspended') ac.resume();
+      var o = ac.createOscillator(), g = ac.createGain(), n = ac.currentTime;
+      o.type = 'sine'; o.frequency.value = 660;
+      g.gain.setValueAtTime(0.0001, n);
+      g.gain.exponentialRampToValueAtTime(0.05, n + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, n + 0.06);
+      o.connect(g).connect(ac.destination); o.start(n); o.stop(n + 0.07);
+    } catch (e) {}
+  }
   document.querySelectorAll('.c').forEach(function (card) {
-    var down = function () { card.classList.add('pressed'); };
+    var down = function (ev) {
+      card.classList.add('pressed');
+      blip();
+      if (reduced || !ev) return;
+      var puff = document.createElement('span');
+      puff.className = 'gal-puff'; puff.setAttribute('aria-hidden', 'true');
+      puff.style.left = (ev.clientX || 0) + 'px'; puff.style.top = (ev.clientY || 0) + 'px';
+      for (var i = 0; i < 6; i++) {
+        var d = document.createElement('i'), a = (i / 6) * Math.PI * 2;
+        d.style.setProperty('--dx', (Math.cos(a) * 22).toFixed(1) + 'px');
+        d.style.setProperty('--dy', (Math.sin(a) * 22).toFixed(1) + 'px');
+        puff.appendChild(d);
+      }
+      document.body.appendChild(puff);
+      setTimeout(function () { if (puff.parentNode) puff.parentNode.removeChild(puff); }, 380);
+    };
     var up = function () { card.classList.remove('pressed'); };
     card.addEventListener('pointerdown', down);
     card.addEventListener('pointerup', up);

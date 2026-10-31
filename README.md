@@ -9,7 +9,7 @@ Foto de un dibujo de un nene + 20–30 s de reglas por voz → juego HTML5 jugab
 
 ## Correr
 ```bash
-cd /workspace/hackathon-meta/dibujo-jugable
+# from the repo root
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python -m playwright install chromium   # una vez
 . .venv/bin/activate
 ./scripts/demo_offline.sh               # offline, sin key

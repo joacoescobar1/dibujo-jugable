@@ -25,7 +25,7 @@ def client():
     from openai import OpenAI
     _load(); return OpenAI(base_url=base(), api_key=_key())
 def log_usage(m, usage, note=""):
-    """Append usage to runs/usage.jsonl and SPEND.md via scripts/log_usage.py (no key involved)."""
+    """Append usage to runs/usage.jsonl and the local spend log via scripts/log_usage.py (no key involved)."""
     import subprocess, datetime
     root = pathlib.Path(__file__).resolve().parents[1]; (root / "runs").mkdir(exist_ok=True)
     with open(root / "runs/usage.jsonl", "a") as f: f.write(json.dumps({"ts": datetime.datetime.now().isoformat(timespec="seconds"), "model": m, "usage": usage, "note": note}) + "\n")

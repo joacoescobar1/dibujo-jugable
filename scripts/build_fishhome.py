@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline Fish Home pages from the Khamkhoune village drawing.
 
-Does not call generate_from_drawing, Meta, or Baseten. Specs are hand-authored.
+Does not call generate_from_drawing or any model API. Specs are hand-authored.
 The kid photo is the plate and the original-drawing panel. Solver path comes from
 agent/playtest.solve and is not edited here.
 """

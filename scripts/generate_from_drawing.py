@@ -8,6 +8,16 @@ VIOLET ink = enemy characters (blob = spawn, violet trail = ping-pong patrol), s
 Phone photos are normalised first (scripts/photo_normalize.py: deskew+crop sheet, flat-field, denoise); clean images pass through."""
 import argparse, json, sys, pathlib, subprocess, hashlib
 ROOT = pathlib.Path(__file__).resolve().parents[1]; sys.path.insert(0, str(ROOT)); sys.path.insert(0, str(ROOT / "scripts"))
+def _rel_drawing(image):
+    """Repo-relative drawing path. Never store an absolute machine path in a spec that can ship."""
+    p = pathlib.Path(image)
+    try:
+        rp = p.resolve()
+        if rp == ROOT or ROOT in rp.parents:
+            return str(rp.relative_to(ROOT))
+    except OSError:
+        pass
+    return p.name
 LEX = {"gato": "Gato", "perro": "Perro", "nave": "Nave", "casa": "Casa", "hueso": "Hueso", "estrella": "Estrella",
        "agua": ("Agua", "#39f"), "fuego": ("Fuego", "#f33"), "piedras": ("Piedras", "#888")}
 ENEMY_LEX = {"bicho": "Bicho", "fantasma": "Fantasma", "lobo": "Lobo", "araña": "Araña", "arana": "Araña", "monstruo": "Monstruo", "perro": "Perro", "gato": "Gato", "dragon": "Dragón"}
@@ -176,7 +186,7 @@ def offline_spec(image, transcript):
     who = next((w for w in words if w in ("gato", "perro", "nave")), "jugador")
     goal = next((w for w in words if w in ("casa", "hueso", "estrella")), "meta")
     hz = next((w for w in words if w in ("agua", "fuego", "piedras")), None)
-    s = {"title": f"{LEX.get(who, who.title())} -> {LEX.get(goal, goal.title())}", "source": {"drawing": str(image), "voice_transcript": transcript.strip()},
+    s = {"title": f"{LEX.get(who, who.title())} -> {LEX.get(goal, goal.title())}", "source": {"drawing": _rel_drawing(image), "voice_transcript": transcript.strip()},
          "genre": "top-down", "grid": {"w": 16, "h": 12, "tile": 40},
          "player": {"id": who, "label": LEX.get(who, who), "x": 1, "y": 1, "color": "#f90"},
          "goals": [{"id": goal, "label": LEX.get(goal, goal), "x": 14, "y": 10, "color": "#4c4"}],
@@ -209,7 +219,7 @@ def muse_spec(mc, img, transcript):
     if not r["ok"]: return {"_meta": {"note": f"Muse error http={r.get('http_status')} -> offline fallback", "live_meta_calls": 1}}
     try: s = mc.parse_json(r["content"])
     except Exception as e: return {"_meta": {"note": f"Muse returned non-JSON ({e}) -> offline fallback", "live_meta_calls": 1}}
-    s.setdefault("source", {"drawing": str(img.relative_to(ROOT)) if img.is_absolute() and ROOT in img.parents else str(img), "voice_transcript": transcript})
+    s.setdefault("source", {"drawing": _rel_drawing(img), "voice_transcript": transcript})
     s["_generator"] = "muse-spark"
     return {**s, "_meta": {"note": "LIVE Muse vision spec", "live_meta_calls": 1, "model": r["model"], "usage": r["usage"]}}
 if __name__ == "__main__":

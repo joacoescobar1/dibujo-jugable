@@ -1,6 +1,6 @@
 # DEMO STORYBOARD — Dibujo Jugable (3:00)
 
-Basado en CONTEXT_FOR_MUSE.md §7 y el pitch de SUBMISSION.md. North-star: % de dibujos jugables y ganables sin edición humana.
+Basado en el pitch de SUBMISSION.md. North-star: % de dibujos jugables y ganables sin edición humana.
 Fallback offline: `game/demo.html` (timeline fail→fix→WIN) + `scripts/demo.sh`.
 
 | t | Pantalla | VO (es) | EN cue |
