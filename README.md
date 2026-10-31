@@ -1,36 +1,42 @@
 # Dibujo Jugable 🎨🕹️
-Foto de un dibujo de un nene + 20–30 s de reglas por voz → juego HTML5 jugable. Un agente **construye → juega → arregla** solo hasta que el nivel sea ganable, y el loop de QA se ve en vivo (diferencial vs. "Kitchen Game" de Meta).
+*"Playable Drawing"* — a photo of a kid's drawing + 20–30 s of spoken rules → a playable HTML5 game. An agent **builds → plays → fixes** the level on its own until it is winnable, and the QA loop is visible live (our differentiator vs. Meta's "Kitchen Game").
+
+## ▶ Play now (no install, no API key)
+- **Online:** https://joacoescobar1.github.io/dibujo-jugable/game/gallery.html — pick a world and press **Play**.
+- **Offline:** clone the repo and open `game/gallery.html` (works over `file://`).
+- UI is in **English by default**; add `?lang=es` for Spanish.
+- Fail → fix → win loop demo: `game/demo.html` (press **▶ Judge mode**).
 
 ## Pipeline
-1. `samples/` foto + audio → **Voice Transcribe** (reglas) + **SAM** (recorte de personajes/objetos) + **Muse Image** (fondo/limpieza de sprites).
-2. el modelo Meta de razonamiento (Muse Spark series) arma `spec.json` (valida contra `specs/game-spec.schema.json`) y genera el nivel sobre `game/`.
-3. `agent/playtest.py` juega vía state API (`window.__GAME__`), no píxeles; reporta si ganó/bug.
-4. `agent/patch_loop.py` le pasa el reporte al modelo Meta, aplica patch, re-juega (máx N iteraciones). Log en `runs/`.
+1. `samples/` photo + audio → **Voice Transcribe** (rules) + **SAM** (cut out characters/objects) + **Muse Image** (background / sprite cleanup).
+2. Meta's reasoning model (Muse Spark series) builds `spec.json` (validated against `specs/game-spec.schema.json`) and generates the level on top of `game/`.
+3. `agent/playtest.py` plays through the state API (`window.__GAME__`), not pixels; it reports win/bug.
+4. `agent/patch_loop.py` sends the report to the Meta model, applies the patch, and replays (up to N iterations). Logs go to `runs/`.
 
-## Correr
+## Run
 ```bash
 # from the repo root
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python -m playwright install chromium   # una vez
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt && .venv/bin/python -m playwright install chromium   # once
 . .venv/bin/activate
-./scripts/demo_offline.sh               # offline, sin key
-python -m http.server -d game 8000       # jugar stub: flechas, llegar a la casa, evitar el agua
+./scripts/demo_offline.sh               # offline, no key
+python -m http.server -d game 8000       # play the stub: arrow keys, reach the house, avoid the water
 python agent/patch_loop.py --spec specs/example.spec.json
 ```
-Credenciales sólo en `../.env` (nunca en código/git).
+Credentials live only in `../.env` (never in code/git). See `.env.example`.
 
-## Modelos Meta
-Muse Spark (spec + código + fixes), SAM 3.1, Muse Image, Voice Transcribe.
+## Meta models
+Muse Spark (spec + code + fixes), SAM 3.1, Muse Image, Voice Transcribe.
 
-## Demo offline (sin API)
-`./scripts/demo_offline.sh` — nivel roto → jugador headless pierde → **mock patcher local** arregla → gana. Producción usa el patcher de **Meta Model API**. Evidencia en `runs/<ts>-mock/`.
+## Offline demo (no API)
+`./scripts/demo_offline.sh` — broken level → headless player loses → **local mock patcher** fixes it → wins. Production uses the **Meta Model API** patcher. Evidence in `runs/<ts>-mock/`.
 
-## Judge demo (offline, 0 API) — un comando
+## Judge demo (offline, 0 API) — one command
 ```
 scripts/serve_demo.sh 8000 --rebuild     # build (mock patcher, 0 Meta) + serve → http://localhost:8000/demo.html?iter=0&tour=1
 ```
-(o `xdg-open game/demo.html`: file:// anda, todo embebido). Botón **▶ Modo juez** = recorrido solo, sin clicks:
-1. **Intento #1 roto**: el agente prueba la ruta más corta (`agent/browser_playtest.optimistic`, el mismo plan que jugó Chromium) y **choca justo con el bug** en el tablero: el monstruo lo atrapa / se cae al río / queda sin salida contra el cerco. Marca roja pulsante 🐞 donde está el problema.
-2. **Arreglo**: el tablero del intento #2 muestra qué cambió el fixer (fantasma + flecha 🔧 "lo corrí", puente, puerta). Las marcas salen de un diff de datos spec k → k+1 (`scripts/fix_marks.py`), no de texto.
-3. **WIN**: el agente lo juega con el camino del solver; queda dibujado el recorrido y el cartel ¡GANASTE! es una cinta arriba → se sigue viendo el dibujo del nene vivo.
+(or `xdg-open game/demo.html`: `file://` works, everything is embedded). The **▶ Judge mode** button runs a hands-free tour:
+1. **Attempt #1, broken**: the agent tries the shortest route (`agent/browser_playtest.optimistic`, the same plan Chromium played) and **hits the bug** on the board: the monster catches it / it falls into the river / it is stuck against the fence. A pulsing red 🐞 marks the problem.
+2. **Fix**: the attempt #2 board shows what the fixer changed (ghost + 🔧 arrow "moved it", bridge, door). The marks come from a data diff of spec k → k+1 (`scripts/fix_marks.py`), not from text.
+3. **WIN**: the agent plays the solver's path; the route stays drawn and the win banner is a ribbon at the top, so the kid's drawing stays visible.
 
-Chequeo: `tests/demo/test_demo_legibility.py` + `tests/demo/test_demo_labels.py` (Chromium; 5 dibujos rotos 02/04/08/11/12 — el default es `synthetic_12`, dibujo con trazo de nene; etiquetas sin pisarse, sin bicho fantasma en el sprite de la meta; falla en pantalla, marcas, % de tablero visible). Screenshots: `evidence/judge_demo_fail.png`, `evidence/judge_demo.png` (`scripts/shoot_judge_demo.py`). Otro dibujo: `.venv/bin/python scripts/build_judge_demo.py --sample samples/synthetic_08` (cerco).
+Checks: `tests/demo/test_demo_legibility.py` + `tests/demo/test_demo_labels.py` (Chromium; 5 broken drawings 02/04/08/11/12 — default is `synthetic_12`, a kid-style drawing; non-overlapping labels, no ghost creature on the goal sprite; on-screen failure, marks, % of board visible). Screenshots: `evidence/judge_demo_fail.png`, `evidence/judge_demo.png` (`scripts/shoot_judge_demo.py`). Another drawing: `.venv/bin/python scripts/build_judge_demo.py --sample samples/synthetic_08` (fence).
