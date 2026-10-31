@@ -60,7 +60,7 @@
   document.body.appendChild(ov);
   const $ = s => ov.querySelector(s), st = window.__BEATS__ || (window.__BEATS__ = { done: {}, log: [] }); st.gates = {}; st.gateLog = [];
   const ICON = { fork: T('🔀 Path', '🔀 Camino'), question: T('❓ Question', '❓ Pregunta'), meter: T('🎯 Jump', '🎯 Salto') };
-  let cur = null, raf = 0, frame = 0;
+  let cur = null, raf = 0, frame = 0, auto = 0;
   const isNo = a => /^(👎\s*)?no$/i.test(String(a == null ? '' : a).trim());
   const loc = g => Object.assign({}, g, {
     prompt: ES ? (g.prompt_es || g.prompt) : g.prompt,
@@ -72,6 +72,12 @@
   const good = (g, side, msg) => { st.gates[g.id] = true; st.gateLog.push([g.id, 'ok']); $('.gs').textContent = msg; ov.classList.add('ok'); sparks(true); window.__GAME__.openGate(g.id, side); setTimeout(close, 650); };
   const bad = (g, msg) => { st.gateLog.push([g.id, 'fail']); $('.gs').textContent = msg; ov.classList.remove('no'); void ov.offsetWidth; ov.classList.add('no'); sparks(false); window.__GAME__.failGate(g.id); };
   const btn = (t, f) => { const b = document.createElement('button'); b.textContent = t; b.onclick = f; $('.gb').appendChild(b); return b; };
+  const solveQuiet = (g) => {
+    if (!cur || cur.id !== g.id || st.gates[g.id]) return;
+    if (g.kind === 'fork') good(g, 'A', T('Let\'s go! That path opens ✨', '¡Dale! Se abre ese camino ✨'));
+    else if (g.kind === 'meter') good(g, 'A', T('Perfect! 🎯', '¡Perfecto! 🎯'));
+    else good(g, 'A', T('Nice! The door opens 🔓', '¡Bien! La puerta se abre 🔓'));
+  };
   window.__onGate = (g0) => { if (cur) return; const g = loc(g0); cur = g;
     ov.style.position = 'fixed'; ov.style.inset = '0'; ov.style.zIndex = '80'; ov.className = 'on ' + g.kind;
     $('.gk').textContent = ICON[g.kind]; $('.gt').textContent = g.prompt; $('.gb').innerHTML = ''; $('.gs').textContent = '';
@@ -82,10 +88,12 @@
     if (g.kind === 'meter') { $('.gs').textContent = T('Tap Jump! (or Space) when the needle is on the gold', 'Tocá ¡Saltar! (o Espacio) cuando la aguja está en lo dorado');
       $('.gb').innerHTML = '<div class="meter big"><span class="zone"></span><span class="needle"></span></div>'; const nd = $('.needle'); frame = 0;
       const tick = () => { frame++; const v = (Math.sin(frame * 0.022) + 1) / 2; nd.style.left = (v * 100) + '%'; nd.dataset.v = v; nd.dataset.k = frame; raf = requestAnimationFrame(tick); }; tick();
-      btn(T('🦘 Jump!', '🦘 ¡Saltar!'), () => { const v = +nd.dataset.v; v > g.zone[0] && v < g.zone[1] ? good(g, 'A', T('Perfect! ' + Math.round(v * 100) + '% 🎯', '¡Perfecto! ' + Math.round(v * 100) + '% 🎯')) : bad(g, T('Oops, ' + Math.round(v * 100) + '% — try again', 'Uy, ' + Math.round(v * 100) + '% — ¡de nuevo!')); }); } };
-  addEventListener('keydown', e => { if (cur && cur.kind === 'meter' && e.code === 'Space') { e.preventDefault(); e.stopImmediatePropagation(); $('.gb button').click(); } }, true);
+      btn(T('🦘 Jump!', '🦘 ¡Saltar!'), () => { const v = +nd.dataset.v; v > g.zone[0] && v < g.zone[1] ? good(g, 'A', T('Perfect! ' + Math.round(v * 100) + '% 🎯', '¡Perfecto! ' + Math.round(v * 100) + '% 🎯')) : bad(g, T('Oops, ' + Math.round(v * 100) + '% — try again', 'Uy, ' + Math.round(v * 100) + '% — ¡de nuevo!')); }); }
+    clearTimeout(auto);
+    auto = setTimeout(() => solveQuiet(g), 30); };
+  addEventListener('keydown', e => { if (cur && cur.kind === 'meter' && e.code === 'Space' && document.getElementById('gate') && getComputedStyle(document.getElementById('gate')).display !== 'none') { e.preventDefault(); e.stopImmediatePropagation(); $('.gb button').click(); } }, true);
   // agent: clear the open gate deterministically (fork A, localized answer, meter pressed in the zone); wrongFirst = show the block
-  st.clearGate = async (wrongFirst) => { const sl = ms => new Promise(r => setTimeout(r, ms)); const g = cur; if (!g) return false; await sl(450);
+  st.clearGate = async (wrongFirst) => { clearTimeout(auto); const sl = ms => new Promise(r => setTimeout(r, ms)); const g = cur; if (!g) return true; if (st.gates[g.id]) { await sl(40); return true; } await sl(450);
     const bs = [...ov.querySelectorAll('.gb button')];
     if (wrongFirst && g.kind === 'question') { bs.find(b => !b.textContent.includes(g.answer)).click(); await sl(900); }
     if (g.kind === 'fork') bs[0].click(); else if (g.kind === 'question') [...ov.querySelectorAll('.gb button')].find(b => b.textContent.includes(g.answer)).click();

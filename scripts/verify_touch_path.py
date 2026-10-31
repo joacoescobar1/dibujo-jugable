@@ -79,6 +79,21 @@ def sources_video(fails):
         t = p.read_text(errors="replace")
         if re.search(r"video\s*:\s*true", t):
             fails.append("video:true in " + p.name)
+    shell = (GAME / "player_shell.js").read_text(errors="replace")
+    if "const FB" in shell or "const GLUE" in shell or "const PHRASE" in shell:
+        fails.append("word-level Spanish substitution is still in player_shell.js")
+
+def minigames_hidden(pg):
+    return pg.evaluate("""() => {
+      const shown = el => {
+        if (!el) return false;
+        const cs = getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
+        const r = el.getBoundingClientRect();
+        return r.width >= 2 && r.height >= 2;
+      };
+      return { beats: shown(document.getElementById('beats')), gate: shown(document.getElementById('gate')), cards: [...document.querySelectorAll('.beat')].filter(shown).length };
+    }""")
 
 def pitch_card(pg):
     return pg.evaluate("""() => {
@@ -720,6 +735,10 @@ def check_judge(pg, fails):
         fails.append("judge stage3d did not boot: " + str(ex)[:120])
     pg.wait_for_timeout(400)
     scan(pg, "judge", fails)
+    hidden = minigames_hidden(pg)
+    print("judge minigames", hidden, flush=True)
+    if hidden.get("beats") or hidden.get("gate") or hidden.get("cards"):
+        fails.append("judge mini-games still visible: %s" % hidden)
     labels = pg.evaluate("() => window.__LABELS__ || []")
     bad = [s for s in labels if ES.search(s or "")]
     print("judge labels", labels, flush=True)
@@ -758,6 +777,10 @@ def check_judge(pg, fails):
       return { h: Math.round(r.height), w: Math.round(r.width), vh: innerHeight, vw: innerWidth, lab: lab };
     }""")
     print("judge land wrap", land_box, flush=True)
+    land_hidden = minigames_hidden(pg)
+    print("judge land minigames", land_hidden, flush=True)
+    if land_hidden.get("beats") or land_hidden.get("gate") or land_hidden.get("cards"):
+        fails.append("landscape judge mini-games still visible: %s" % land_hidden)
     if not land_box or not land_box.get("lab") or land_box["h"] < land_box["vh"] * 0.5:
         fails.append("landscape judge world does not fill the phone: %s" % land_box)
     pg.screenshot(path=str(EV / "verify_touch_pass13_judge_land.png"))
@@ -1225,6 +1248,46 @@ def check_results(pg, fails):
     if res and (res["left"] < -1 or res["right"] > res["vw"] + 1 or res["top"] < -1 or res["bottom"] > res["vh"] + 1):
         fails.append("results overflow the ending screen: %s" % res)
     pg.screenshot(path=str(EV / "verify_touch_results.png"))
+
+def check_pipo_skip(pg, fails):
+    """Pipo's world: a click and Enter dismiss the story card. Mini-games stay hidden."""
+    pipo = (GAME / "w_perrofuego.html").resolve().as_uri()
+    pg.goto(pipo + "?mute=1", wait_until="domcontentloaded")
+    if not reach_tale(pg):
+        fails.append("Pipo story did not open")
+        return
+    pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
+    pg.evaluate("""() => {
+      const t = document.getElementById('tale');
+      if (!t) return;
+      const r = t.getBoundingClientRect();
+      const card = t.querySelector('.card') || t;
+      const cr = card.getBoundingClientRect();
+      card.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, clientX: cr.left + cr.width / 2, clientY: cr.top + cr.height / 2 }));
+    }""")
+    pg.wait_for_timeout(180)
+    closed = pg.evaluate("() => ({ closed: window.__TALE__ && window.__TALE__.closed, up: !!document.getElementById('tale') })")
+    print("pipo click skip", closed, flush=True)
+    if not closed or closed.get("closed") != "tap" or closed.get("up"):
+        fails.append("click did not skip the Pipo story: %s" % closed)
+    pg.goto(pipo + "?mute=1", wait_until="domcontentloaded")
+    if not reach_tale(pg):
+        fails.append("Pipo story did not open for the keyboard skip")
+        return
+    pg.evaluate("() => { clearTimeout(window.__TALE_TIMER__); }")
+    pg.keyboard.press("Enter")
+    pg.wait_for_timeout(180)
+    closed = pg.evaluate("() => ({ closed: window.__TALE__ && window.__TALE__.closed, up: !!document.getElementById('tale') })")
+    print("pipo key skip", closed, flush=True)
+    if not closed or closed.get("closed") != "key" or closed.get("up"):
+        fails.append("Enter did not skip the Pipo story: %s" % closed)
+    pg.keyboard.press(" ")
+    hidden = minigames_hidden(pg)
+    print("pipo minigames", hidden, flush=True)
+    if hidden.get("beats") or hidden.get("gate") or hidden.get("cards"):
+        fails.append("mini-games visible on the Pipo player path: %s" % hidden)
+    scan(pg, "pipo-en", fails)
+    pg.screenshot(path=str(EV / "verify_touch_pipo_en.png"))
 
 def check_other_world(pg, fails):
     other = (GAME / "w_gato.html").resolve().as_uri()
@@ -1699,6 +1762,7 @@ def main():
             full_path(pg, fails)
             check_es(pg, fails)
             check_other_world(pg, fails)
+            check_pipo_skip(pg, fails)
             check_fishhome(pg, fails)
             check_landscape(pg, fails)
             pg.goto(GALLERY, wait_until="domcontentloaded")
